@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet version="2.0" type="text/xsl" href="../WorkerPageCreator.xsl"?>
+
+<!--
+    Document   : CImageWorker.xml
+    Created on : October 15, 2011, 3:37 PM
+    Author     : gimli
+    Description:
+        Purpose of the document follows.
+-->
+
+<root>
+	<worker name="Image workers basics">
+		<description>
+			<p>Image worker is a cornerstone of Fresco application. Every opened image can be processed by many of algorithms. Each algorithm is represented by its onw "Worker".</p>
+		</description>
+	</worker>
+</root>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet version="2.0" type="text/xsl" href="MenuFormatter.xsl"?>
+<root>
+	<title>List of workers</title>
+	<folder name="/home/gimli/NetBeansProjects/Fresco/xml-doc/main-menu.xml">
+	</folder>
+	<folder name="workers">
+		<a href="workers/CImageWorker.xml">Image workers basics</a>
+	</folder>
+	<folder name="workers/registration">
+		<a href="workers/registration/CPerspectiveTransformationWorker.xml">Perspective transformation</a>
+	</folder>
+</root>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet version="2.0" type="text/xsl" href="../../WorkerPageCreator.xsl"?>
+
+<!--
+    Document   : CPerspectiveTransformationWorker.xml
+    Created on : October 15, 2011, 2:25 PM
+    Author     : gimli
+    Description:
+-->
+<root>
+	<worker name="Perspective transformation">
+		<description>
+			<p>The perspecitve transformation changes projection (angle and position) of flat image in space. For details see <a href="http://en.wikipedia.org/wiki/3D_projection#Perspective_projection">wikipedia</a>.</p>
+		</description>
+		<usage><p>Method is useful for registration of two (originaly flat) images which was captured (i.e. by camera) from different angles and position.</p>
+			<p>By setting of four point into each of input images transformation params are computed and first (top/left) image is perspectively transformed that four control points are matched one to correspondig one in other image.</p>
+			<p>Selection of four reffering points is possible to made by tool "set point"</p>
+		</usage>
+		<sources>
+			<source>http://en.wikipedia.org/wiki/3D_projection#Perspective_projection</source>
+		</sources>
+	</worker>
+</root>

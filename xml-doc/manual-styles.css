@@ -1,0 +1,7 @@
+body {font-family: Palatino;}
+ol {counter-reset: list;}
+ol li {list-style: none;}
+ol li:before {content: counter(list, lower-roman) ") ";counter-increment: list;}
+h4 {text-transform: uppercase}
+.content-frame {float:left; width:750px; border: 3px; text-align: justify; background: #ccccdd; padding: 15px}
+div.mainMenu {float:left; width: 250px}

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+targetNamespace="http://gimli.matfyz.cz/fresco/xml-doc"
+xmlns="http://gimli.matfyz.cz/fresco/xml-doc">
+
+<!-- elements -->
+	<xs:element name="source" type="xs:string" />
+
+	<xs:element name="a">
+		<xs:complexType mixed="true">
+			<xs:attribute name="href" type="xs:string" use="required" />
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="environment">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="p" maxOccurs="unbounded" />
+			</xs:sequence>
+			<xs:attribute name="name" type="xs:string" use="required" />
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="description">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="p" maxOccurs="unbounded" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="p">
+		<xs:complexType mixed="true">
+			<xs:sequence>
+				<xs:element ref="a" maxOccurs="unbounded" minOccurs="0"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="root">
+		<xs:complexType>
+			<xs:choice>
+				<xs:element ref="worker" />
+				<xs:element ref="environment" />
+			</xs:choice>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="sources">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="source" maxOccurs="unbounded" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="usage">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="p" maxOccurs="unbounded" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="worker">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="description" />
+				<xs:element ref="usage" />
+				<xs:element ref="sources" />
+			</xs:sequence>
+			<xs:attribute name="name" type="xs:string" use="required" />
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>

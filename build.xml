@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." default="fresco-run" name="fresco">
+	<description>
+This is help for Fresco build system
+Following ant commands are used for building Fresco web start application.
+	</description>
+
+<!--
+PROPERTIES NAMING CONVENTIONS:
+	*.dir  should be absolute directory path set by location
+	*.path should be a directory name set by value
+
+	*.file should be the absolute file location
+	*.filename should be only the file name with no directories (set by value)
+-->
+
+	<property name="dist.dir" location="dist" />
+	<property name="out.dir" location="out" />
+	<property name="src.dir" location="${basedir}/src" />
+	<property name="javadoc.dir" location="${basedir}/javadoc" />
+
+	<property name="fresco.filename" value="fresco.jar"/>
+	<property name="logconf.file" location="${basedir}/logging.properties" />
+
+	<!-- Common / indiferent targets -->
+
+	<target name="help">
+		<echo message="Use ant -projecthelp to show list of targets"/>
+	</target>
+
+	<target name="clean" depends="test-clean"
+		description="removes all of generated directories and their content">
+		<delete failonerror="false" includeemptydirs="true">
+			<fileset dir="${out.dir}" />
+			<fileset dir="${dist.dir}" />
+			<fileset dir="${web.dir}" />
+			<fileset dir="${javadoc.dir}" />
+		</delete>
+	</target>
+
+	<target name="javadoc" depends="fresco-compile"
+		description="(doc) generates javadoc">
+		<mkdir dir="${javadoc.dir}" />
+		<javadoc sourcepath="${src.dir}" package="true"  destdir="${javadoc.dir}">
+			<classpath>
+				<pathelement path="${classpath}:${out.dir}" />
+			</classpath>
+		</javadoc>
+	</target>
+
+
+	<fileset id="fresco.classes" dir="${out.dir}">
+		<include name="META-INF/**/*"/>
+		<include name="**/*.class"/>
+	</fileset>
+
+	<fileset id="fresco.resources" dir="${src.dir}">
+		<include name="**/*.jpe"/>
+		<include name="**/*.jpeg"/>
+		<include name="**/*.gif"/>
+		<include name="**/*.png"/>
+		<include name="**/*.jpg"/>
+		<include name="**/*.txt"/>
+		<include name="**/*.xml"/>
+	</fileset>
+
+	<path id="fresco.classpath">
+		<pathelement path="${out.dir}"/>
+		<pathelement location="./lib/*.jar" />
+	</path>
+
+	<target name="fresco-compile-prepare">
+		<mkdir dir="${out.dir}"/>
+	</target>
+
+	<target name="fresco-compile" depends="fresco-compile-prepare">
+		<!-- description="(debug) compiles Fresco classes to the folder out" -->
+		<javac srcdir="${src.dir}"
+			destdir="${out.dir}"
+			debug="true" deprecation="true" nowarn="false"
+			source="1.6" encoding="UTF-8" target="1.6" includeantruntime="false">
+			<classpath refid="fresco.classpath"/>
+		</javac>
+	</target>
+
+	<target name="fresco-jar-prepare">
+		<!-- description="Prepares distribution directory and metadata (namely manifest file)" -->
+		<mkdir dir="${dist.dir}" />
+		<mkdir dir="${out.dir}/META-INF"/>
+		<manifest file="${out.dir}/META-INF/MANIFEST.MF">
+			<attribute name="Implementation-Version" value="2.0" />
+			<attribute name="Created-By" value="m3art team" />
+			<attribute name="Main-Class" value="fresco.Main" />
+		</manifest>
+	</target>
+
+	<target name="fresco-jar" depends="fresco-compile, fresco-jar-prepare"
+		description="(dist) creates Fresco JAR">
+		<zip destfile="${dist.dir}/${fresco.filename}">
+			<fileset refid="fresco.classes" />
+			<fileset refid="fresco.resources" />
+		</zip>
+		<signjar jar="${dist.dir}/${fresco.filename}" alias="frescosign" keypass="frescoSignum"
+			keystore="frescoKeystore" storepass="frescoSignum" />
+	</target>
+
+	<target name="fresco-rebuild" depends="clean, fresco-jar"/>
+		<!-- description="(debug) clean and compile Fresco" -->
+
+	<target name="fresco-run" depends="fresco-jar"
+		description="(dist) compile and run Fresco with logging.properties">
+		<java jar="${dist.dir}/${fresco.filename}" fork="true">
+			<jvmarg value="-Xmx1500m" />
+			<jvmarg value="-Dapple.laf.useScreenMenuBar=true" />
+			<jvmarg value="-Dcom.apple.mrj.application.apple.menu.about.name=Fresco" />
+			<jvmarg value="-Xdock:icon=src/icons/Zebra-128x128.png" />
+			<sysproperty key="java.util.logging.config.file" value="${logconf.file}" />
+		</java>
+	</target>
+
+	<property name="web.dir" value="${basedir}/web" />
+	<property name="lib.dir" value="${basedir}/lib" />
+	<fileset id="fresco.libs" dir="${lib.dir}">
+		<filename name="**/*.jar" />
+	</fileset>
+	<property name="jnlp.template" value="fresco.jnlp.template" />
+
+	<target name="fresco-deploy" depends="fresco-rebuild" description="(dist) creates webstart files in web.dir folder">
+		<mkdir dir="${web.dir}" />
+		<mkdir dir="${web.dir}/lib" />
+		<copy toDir="${web.dir}/lib/">
+			<fileset refid="fresco.libs"/>
+		</copy>
+		<copy file="${dist.dir}/${fresco.filename}" toDir="${web.dir}" />
+		<copy file="${basedir}/icon.gif" toDir="${web.dir}" />
+		<copy file="${basedir}/${jnlp.template}" toFile="${web.dir}/fresco.jnlp" />
+	</target>
+
+	<!-- TESTS SECTION -->
+
+	<property name="test.src.dir" value="${basedir}/test" />
+	<property name="test.out.dir" value="${out.dir}/test" />
+	<property name="test.results.dir" location="test.results" />
+
+	<fileset id="test.classes" dir="${test.out.dir}">
+		<include name="**/*.class"/>
+	</fileset>
+
+	<path id="test.classpath">
+		<pathelement path="${out.dir}"/>
+		<pathelement path="${test.out.dir}" />
+		<pathelement location="${basedir}/lib/junit-4.10.jar" />
+		<pathelement path="${src.dir}" />
+	</path>
+
+	<target name="test-clean">
+		<!-- description="(test) cleans the test results and compiled test classes" -->
+		<delete failonerror="false" includeemptydirs="true">
+			<fileset dir="${test.out.dir}" />
+			<fileset dir="${test.results.dir}" />
+		</delete>
+	</target>
+
+	<target name="test-prepare">
+		<mkdir dir="${test.out.dir}" />
+		<mkdir dir="${test.results.dir}" />
+	</target>
+
+	<target name="test-compile" depends="test-prepare, fresco-compile">
+		<javac destdir="${test.out.dir}" classpathref="test.classpath" sourcepath="${src.dir}" srcdir="${test.src.dir}"
+				debug="true" deprecation="true" nowarn="false"
+				source="1.6" target="1.6" encoding="UTF-8" includeantruntime="false"/>
+	</target>
+
+	<target name="check" depends="fresco-rebuild, test"
+		description="(test) rebuild and test" />
+
+	<fileset id="test.all.unittests" dir="${test.out.dir}">
+		<include name="**/*Test.class" />
+	</fileset>
+
+	<target name="test" depends="test-compile"
+		description="(test) run fresco tests">
+		<junit haltonfailure="yes">
+			<formatter type="plain" />
+			<classpath refid="test.classpath" />
+			<batchtest fork="yes" todir="${test.results.dir}">
+				<fileset refid="test.all.unittests"/>
+			</batchtest>
+		</junit>
+	</target>
+</project>

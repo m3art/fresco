@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jnlp spec="1.0+" codebase="http://m3art.utia.cas.cz/fresco/" href="fresco.jnlp">
+    <information>
+        <title>Fresco</title>
+        <vendor>m3art team</vendor>
+		<homepage href="http://m3art.utia.cas.cz/fresco/"/>
+	    <description>Software for virtual image restoration</description>
+	    <icon href="http://m3art.utia.cas.cz/fresco/icon.gif"/>
+		<offline-allowed/>
+    </information>
+	<security>
+		<all-permissions />
+	</security>
+    <resources>
+        <!-- Application Resources -->
+		 <j2se version="1.6+"
+              href="http://java.sun.com/products/autodl/j2se"
+              java-vm-args="-Xmx1500m -Dcom.apple.mrj.application.apple.menu.about.name=Fresco -Dapple.laf.useScreenMenuBar=true -Xdock:icon=src/icons/Zebra-128x128.png"/>  <!-- secure java vm argument -->
+        <jar href="dist/Fresco.jar" main="true" />
+		<jar href="it.tidalwave.imageio.raw-1.6.1.jar" main="true" />
+		<jar href="jai_codec.jar" main="true" />
+		<jar href="jai_core.jar" main="true" />
+    </resources>
+    <application-desc main-class="fresco.Main">
+        <!-- Application Arguments -->
+    </application-desc>
+</jnlp>

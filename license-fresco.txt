@@ -1,0 +1,8 @@
+<#if licenseFirst??>
+${licenseFirst}
+</#if>
+${licensePrefix}Part of Fresco software under GPL licence
+${licensePrefix}http://www.gnu.org/licenses/gpl-3.0.txt
+<#if licenseLast??>
+${licenseLast}
+</#if>
