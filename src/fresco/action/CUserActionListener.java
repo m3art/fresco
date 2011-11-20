@@ -142,7 +142,7 @@ public class CUserActionListener implements ActionListener, ItemListener {
 				case verticalFlip:
 				case mirrorFlip:
 				case diff:
-					throw new UnsupportedOperationException("Not yet implemented");
+//					throw new UnsupportedOperationException("Not yet implemented");
 				case register:
 					manager.runImageWorker(id, null);
 					break;
@@ -216,7 +216,7 @@ public class CUserActionListener implements ActionListener, ItemListener {
 		 * @param imageID defines container
 		 */
 		public void loadContainer(int panelID, int imageID) {
-			logger.info("Loading container " + imageID + " into " + panelID + " panel");
+			logger.log(Level.INFO, "Loading container {0} into {1} panel", new Object[]{imageID, panelID});
 			manager.loadContainer(panelID, imageID);
 		}
 
@@ -226,7 +226,7 @@ public class CUserActionListener implements ActionListener, ItemListener {
 		 * @param selected value of menu item in this state
 		 */
 		private void setView(RegID regID, boolean selected) {
-			logger.info("Setting view " + regID);
+			logger.log(Level.INFO, "Setting view {0}", regID);
 
 			switch (regID) {
 				case show2ndInput:

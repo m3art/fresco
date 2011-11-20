@@ -22,7 +22,7 @@ import workers.segmentation.CSegmentMap;
 public class CImagePanel extends CDrawPanel implements Scrollable, MouseListener {
 
 	/** size of the cross mark */
-	public static final int CROSS_SIZE = 3;
+	public static final int CROSS_SIZE = 4;
 	/** Identification number of ImagePanel */
 	final int id;
 	/** handler of image shown in this panel */
@@ -94,8 +94,8 @@ public class CImagePanel extends CDrawPanel implements Scrollable, MouseListener
 	private void paintRegMarks(Graphics g) {
 		int x, y;
 		Iterator iter = container.getMarks().iterator();
-		Color[] markFg = {Color.BLACK, Color.BLUE, Color.GREEN, Color.RED},
-				markBg = {Color.WHITE, Color.YELLOW, Color.PINK, Color.BLACK};
+		Color[] markFg = {Color.BLACK, Color.BLUE, Color.GREEN, Color.RED, Color.YELLOW},
+				markBg = {Color.WHITE, Color.YELLOW, Color.PINK, Color.BLACK, Color.BLUE};
 		Point mark;
 		int i = 0;
 
@@ -104,16 +104,30 @@ public class CImagePanel extends CDrawPanel implements Scrollable, MouseListener
 			x = (int) (mark.x * CData.getFocus() / 100);
 			y = (int) (mark.y * CData.getFocus() / 100);
 
-			g.setColor(markBg[i % 4]);
+			g.setColor(markBg[i % markBg.length]);
 			g.drawLine(x - CROSS_SIZE - 1, y - CROSS_SIZE - 1, x + CROSS_SIZE + 1, y - CROSS_SIZE - 1);
 			g.drawLine(x - CROSS_SIZE - 1, y - CROSS_SIZE - 1, x - CROSS_SIZE - 1, y + CROSS_SIZE + 1);
 			g.drawLine(x + CROSS_SIZE + 1, y + CROSS_SIZE + 1, x - CROSS_SIZE - 1, y + CROSS_SIZE + 1);
 			g.drawLine(x + CROSS_SIZE + 1, y + CROSS_SIZE + 1, x + CROSS_SIZE + 1, y - CROSS_SIZE - 1);
-			g.setColor(markFg[i % 4]);
+			g.setColor(markFg[i % markBg.length]);
 			g.drawLine(x + CROSS_SIZE, y, x - CROSS_SIZE, y);
 			g.drawLine(x, y + CROSS_SIZE, x, y - CROSS_SIZE);
 			logger.log(Level.FINEST, "Mark was painted: {0}, {1}", new Object[]{x, y});
 			i++;
+
+			char[] number = ((Integer)i).toString().toCharArray();
+			g.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 3*CROSS_SIZE));
+			int width = g.getFontMetrics().charsWidth(number, 0, number.length);
+			g.fillRect(x + CROSS_SIZE, y + CROSS_SIZE, CROSS_SIZE + width, 3*CROSS_SIZE);
+			if (g.getColor().equals(Color.black)) {
+				g.setColor(Color.white);
+			} else {
+				g.setColor(Color.black);
+			}
+			g.drawRect(x + CROSS_SIZE, y + CROSS_SIZE, CROSS_SIZE + width, 3*CROSS_SIZE);
+
+			g.drawChars(number, 0, number.length, x + CROSS_SIZE + CROSS_SIZE/2, y + 3*CROSS_SIZE + CROSS_SIZE/2);
+
 		}
 	}
 

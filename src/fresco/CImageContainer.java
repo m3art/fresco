@@ -248,10 +248,10 @@ public class CImageContainer {
 			regMarks = new LinkedList<Point>();
 		}
 
-		if (regMarks.size() < 4) {
+//		if (regMarks.size() < 4) {
 			regMarks.add(new Point(x, y));
 			logger.log(Level.FINE, "Mark put at: [{0}, {1}]", new Object[]{x, y});
-		}
+//		}
 	}
 
 	/**

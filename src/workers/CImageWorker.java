@@ -93,14 +93,23 @@ public abstract class CImageWorker<T, V> extends SwingWorker<T, V> implements II
 
 	public abstract String getWorkerName();
 
+	/**
+	 * Evaluate values set by user. Default Worker does not support user input.
+	 * In this case is call of this method illegal and
+	 * @throws UnsupportedOperationException is thrown.
+	 */
+	public boolean confirmDialog() {
+		throw new UnsupportedOperationException("This worker does not implement user input yet.");
+	}
+
+	/**
+	 * Default user interface to any user. No dialog is necessary (nothing is
+	 * shown). If you want user input in your worker rewrite this method.
+	 * @return null
+	 */
 	public JDialog getParamSettingDialog() {
 		logger.info("No params are necessary.");
 
-//		JDialog dialog = new JDialog(CData.mainFrame, getWorkerName(), ModalityType.APPLICATION_MODAL);
-//
-//		dialog.add(new JButton(null))
-//
-//		return dialog;
 		return null;
 	}
 }

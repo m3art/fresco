@@ -4,13 +4,19 @@
  */
 package workers.registration.refpointga;
 
+import fresco.swing.CWorkerDialogFactory;
 import image.CBinaryImage;
+import info.clearthought.layout.TableLayout;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.util.LinkedList;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 import support.CSupportWorker;
 import workers.analyse.CCannyEdgeDetector;
 import workers.registration.CPointPairs;
@@ -35,10 +41,10 @@ import workers.registration.CPointPairs;
 public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransformation[]> {
 
 	private static final Logger logger = Logger.getLogger(CRefPointMarker.class.getName());
-	/** Number of generations is mentioned in article, experimental result */
-	private static int GENERATIONS = 100000;
+	/** Number of evolution generations. In each generation one offspring is generated. */
+	private static int GENERATIONS_DEFAULT = 10000;
 	/** Evolution is stopped when this part of population succeed on threshold fitness */
-	private static double FITNESS_THRESHOLD = 0.95;
+	private static double FITNESS_THRESHOLD_DEFAULT = 0.95;
 	/** Ranges for initial values */
 	/** centered around 0 */
 	static final double ANGLE_RANGE = Math.PI / 10;
@@ -50,8 +56,8 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 	static final double MUTATION_FACTOR = 0.125;
 	/** subpopulation size for competition */
 	static final double RTS_SIZE = 0.9;
-	/** Correlation of point pairs. Radius define range of counted correlation */
-	static final int RADIUS = 25;
+	/** Correlation of point pairs. Radius define range of counted correlation around center pixel */
+	static final int RADIUS_DEFAULT = 25;
 	/** size of population of marks for genetic algorithm */
 	private final int populationSize;
 	/** Set of points and their rigid transformation params */
@@ -66,6 +72,12 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 	private CNearestEdgeMatrix nem;
 	/** Bounds of source */
 	private final int width, height;
+	/** Evolution generations */
+	private int generations = GENERATIONS_DEFAULT;
+	/** Fitness threshold */
+	private double fitnessThreshold = FITNESS_THRESHOLD_DEFAULT;
+	/** Similarity measure radius */
+	private int radius = RADIUS_DEFAULT;
 
 	public CRefPointMarker(BufferedImage source, BufferedImage reference, int populationSize) {
 		this.source = source;
@@ -95,7 +107,7 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 		dump(population);
 
 		// initialize evolution
-		CPointEvolution evolution = new CPointEvolution(GENERATIONS, population, nem);
+		CPointEvolution evolution = new CPointEvolution(generations, population, nem);
 
 		// evolve individuals
 		while (evolution.oneGeneration()) {
@@ -111,7 +123,7 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 				break;
 			}
 			publish(population);
-			setProgress(100 / 6 + 500 * evolution.getGenerations() / GENERATIONS / 6);
+			setProgress(100 / 6 + 500 * evolution.getGenerations() / generations / 6);
 		}
 
 		if (bestOf.size() < populationSize && bestOf.size() > 4) {
@@ -151,7 +163,7 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 	 * as identity with Gaussian noise.
 	 */
 	private void createPopulation() {
-		CCrossCorrelationFitness fitnesEvaluator = new CCrossCorrelationFitness(source, reference, RADIUS);
+		CCrossCorrelationFitness fitnesEvaluator = new CCrossCorrelationFitness(source, reference, radius);
 
 
 		for (int i = 0; i < populationSize; i++) {
@@ -189,7 +201,7 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 		averageFitness = 0;
 
 		for (int i = 0; i < population.length; i++) {
-			if (population[i].getFitness() > FITNESS_THRESHOLD && !bestOf.contains(population[i])) {
+			if (population[i].getFitness() > fitnessThreshold && !bestOf.contains(population[i])) {
 
 				bestOf.add(population[i]);
 			}
@@ -198,5 +210,73 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 		}
 
 		averageFitness /= population.length;
+	}
+
+
+	/**
+	 * Text input of number of generations (evolved by algorithm). Accepted
+	 * values are integers greater than zero. Useful values are up to 10^6
+	 */
+	JTextField gensInput;
+	/**
+	 * Similarity measure is defined only on small area. This area can vary due
+	 * to resolution of input image. For high resolution images I recommend
+	 * under sampling.
+	 */
+	JTextField measuredAreaInput;
+	/**
+	 * Different size of compared areas can cause variation of absolute value
+	 * of similarity measure. This should be handeled here.
+	 * TODO: For some measures can be precomputed and automatically set
+	 */
+	JTextField similarityThresholdInput;
+
+	@Override
+	public boolean confirmDialog() {
+		return true;
+	}
+
+	@Override
+	public JDialog getParamSettingDialog() {
+		logger.info("No params are necessary.");
+
+		JPanel content = new JPanel();
+		TableLayout layout = new TableLayout (new double[]{0.6, 0.4},
+				new double[]{TableLayout.FILL, TableLayout.FILL, TableLayout.FILL,
+				TableLayout.FILL, TableLayout.FILL, TableLayout.FILL,
+				TableLayout.FILL, TableLayout.FILL, TableLayout.FILL});
+
+
+		layout.setHGap(5);
+		layout.setVGap(5);
+		content.setLayout(layout);
+
+		// number of generations
+		JLabel generationsLab = new JLabel("Number of generations: ");
+		content.add(generationsLab, "0, 0");
+		if (gensInput == null) {
+			gensInput = new JTextField(""+generations);
+		}
+		content.add(gensInput, "1, 0");
+
+		// size of compared area
+		JLabel similarityRadius = new JLabel("Radius of comparedArea: ");
+		content.add(similarityRadius, "0, 1");
+		if (measuredAreaInput == null) {
+			measuredAreaInput = new JTextField(""+radius);
+		}
+		content.add(measuredAreaInput, "1, 1");
+
+		// threashold of similarity
+		JLabel similarityThreshold = new JLabel("Similarity threshold: ");
+		content.add(similarityThreshold, "0, 2");
+		if (similarityThresholdInput == null) {
+			similarityThresholdInput = new JTextField(""+FITNESS_THRESHOLD_DEFAULT);
+		}
+		content.add(similarityThresholdInput, "1, 2");
+
+		JDialog dialog = CWorkerDialogFactory.createOkCancelDialog(this, content);
+
+		return dialog;
 	}
 }
