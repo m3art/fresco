@@ -161,40 +161,11 @@ public class CUserActionListener implements ActionListener, ItemListener {
 					manager.runImageWorker(id, params);
 					break;
 				case colorQuantization:
-					// create input params
-					Object[] colorNo;
-					s = (String) JOptionPane.showInputDialog(
-							new JFrame("Number of output colors ..."),
-							"Set number of output color:", "Number of output colors",
-							JOptionPane.PLAIN_MESSAGE, null, null, "100");
-
-					if ((s != null) && (s.length() > 0)) {
-
-						int size = Integer.parseInt(s);
-
-						colorNo = new Object[1];
-						colorNo[0] = size;
-						manager.runImageWorker(id, colorNo);
-						break;
-					}
+					manager.runImageWorker(id, null);
 					break;
 				case laplace:
-					// create input params
-					Object[] objects;
-					s = (String) JOptionPane.showInputDialog(
-							new JFrame("Size of laplacian matrix ..."),
-							"Set size of matrix (3 or 5)", "Size of laplacian matrix ...",
-							JOptionPane.PLAIN_MESSAGE, null, null, "5");
-
-					if ((s != null) && (s.length() > 0)) {
-
-						int size = Integer.parseInt(s);
-
-						objects = new Object[1];
-						objects[0] = size;
-						manager.runImageWorker(id, objects);
-						break;
-					}
+					manager.runImageWorker(id, null);
+					break;
 				case registerMarks:
 					CData.setTool(Tool.regMarker);
 					logger.log(Level.INFO, "New tool selected: {0}", CData.getTool().name());

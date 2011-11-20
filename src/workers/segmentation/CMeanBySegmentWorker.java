@@ -14,22 +14,25 @@ import java.util.logging.Logger;
 import support.CSupportWorker;
 
 /**
+ * Worker creates new bitmap according to segment map and input image. Both informations
+ * should be contained in input ImageContainer. As an output averaged segments are generated.
  *
  * @author gimli
  */
 public class CMeanBySegmentWorker extends CSupportWorker<BufferedImage, String> {
 
+	/** Input data - segment map and input image */
 	CImageContainer container;
 	private static final Logger logger = Logger.getLogger(CMeanBySegmentWorker.class.getName());
 
+	/**
+	 * @param cont must contain initialized SegmentMap and input image
+	 */
 	public CMeanBySegmentWorker(CImageContainer cont) {
-		setContainer(cont);
-	}
-
-	private void setContainer(CImageContainer cont) {
 		container = cont;
 	}
 
+	@Override
 	protected BufferedImage doInBackground() throws Exception {
 		CSegmentMap map = container.getSegmentMap();
 		BufferedImage original = container.getImage();
@@ -56,7 +59,7 @@ public class CMeanBySegmentWorker extends CSupportWorker<BufferedImage, String> 
 		for (i = 0; i < out.getWidth(); i++) {
 			for (j = 0; j < out.getHeight(); j++) {
 				raster.setPixel(i, j, list[mapa[i][j]].getColor());
-				setProgress(i * out.getHeight() + j);
+				setProgress((i * out.getHeight() + j) * 100 / maxProgress);
 			}
 		}
 		out.setData(raster);
@@ -70,7 +73,7 @@ public class CMeanBySegmentWorker extends CSupportWorker<BufferedImage, String> 
 		} catch (InterruptedException ex) {
 			logger.log(Level.FINE, "Conversion interrupted: ", ex);
 		} catch (ExecutionException ex) {
-			logger.log(Level.INFO, "Exec problem: ", ex);
+			logger.log(Level.INFO, "Exec problem: ", ex.toString());
 		}
 	}
 

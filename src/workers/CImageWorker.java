@@ -57,7 +57,7 @@ public abstract class CImageWorker<T, V> extends SwingWorker<T, V> implements II
 	public static CImageWorker createWorker(RegID id, Object[] params) {
 		switch (id) {
 			case laplace:
-				return new CLaplacian(CData.getImage(CData.showImage[0]).getImage(), (Integer) (params[0]));
+				return new CLaplacian(CData.getImage(CData.showImage[0]).getImage());
 			case sobel:
 				return new CCannyEdgeDetector(CData.getImage(CData.showImage[0]).getImage());
 			case rotateRight:
@@ -72,7 +72,7 @@ public abstract class CImageWorker<T, V> extends SwingWorker<T, V> implements II
 						CData.getImage(CData.showImage[2]).getImage(), (Integer) (params[0]), (Integer) (params[1]));
 			case colorQuantization:
 				BufferedImage image = CData.getImage(CData.showImage[0]).getImage();
-				return new CColorQuantizer(CData.getImage(CData.showImage[0]).getImage(), image.getWidth() * image.getHeight() / 1000, 3, (Integer) params[0]);
+				return new CColorQuantizer(CData.getImage(CData.showImage[0]).getImage());
 			case register:
 				return new CPerspectiveTransformationWorker(CData.getImage(CData.showImage[0]), CData.getImage(CData.showImage[2]));
 			case patternAnalyzer:

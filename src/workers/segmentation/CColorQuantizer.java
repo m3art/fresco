@@ -4,37 +4,59 @@
  */
 package workers.segmentation;
 
+import fresco.swing.CWorkerDialogFactory;
+import info.clearthought.layout.TableLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.image.BufferedImage;
+import java.awt.image.Raster;
 import java.util.LinkedList;
+import java.util.logging.Level;
 import utils.vector.CBasic;
-import java.awt.image.*;
-import java.awt.*;
 import java.util.Arrays;
+import java.util.logging.Logger;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 /**
- * ColorQuantizer reduce number of colors used in picture.
+ * ColorQuantizer reduce number of colors used in picture. Used algorithm is
+ * k-means
  * @author Honza Blazek
  */
 public class CColorQuantizer extends CSegmentationWorker {
 
-	BufferedImage original, image, graphImage;
-	CColorMean[] color;
-	Point size;
-	int iters, Neigh, means, bands;
-	//int[][] map;
-	//LinkedList<CSegment> segments;
+	/** Default value for k. Output image will have this number of colours. */
+	public static int MEANS_DEFAULT = 100;
+	/** This number of nearest neighbors is updated other means keeps its places*/
+	public static int EVALUATED_NEIGHBORS_DEFAULT = 3;
+	/** In each iteration one pixel is evaluated */
+	public static double ITERATIONS_PER_PIXEL_DEFAULT = 0.33;
+
+	private BufferedImage original, graphImage;
+	/** Floating values of colour means */
+	private CColorMean[] color;
+	/** Input image size */
+	private final Dimension size;
+	private int iters, evaluatedNeighbors, means, bands;
+	/** Output map of segments */
 	CSegmentMap map;
+	/** Logging tool */
+	private static final Logger logger = Logger.getLogger(CColorQuantizer.class.getName());
 
 	/** Creates new instance of CColorQuantizer
 	 * @param pat image to process
 	 */
-	public CColorQuantizer(BufferedImage pat, int iterations, int neiboroughs, int colors) {
+	public CColorQuantizer(BufferedImage pat) {
 		original = pat;
 		bands = original.getSampleModel().getNumBands();
-		size = new Point(original.getWidth(), original.getHeight());
-		iters = iterations;
-		Neigh = neiboroughs;
-		image = new BufferedImage(size.x, size.y, BufferedImage.TYPE_INT_RGB);
-		means = colors;
+		size = new Dimension(original.getWidth(), original.getHeight());
+		iters = (int)(size.width * size.height * ITERATIONS_PER_PIXEL_DEFAULT);
+		evaluatedNeighbors = EVALUATED_NEIGHBORS_DEFAULT;
+		means = MEANS_DEFAULT;
 	}
 
 	/**
@@ -51,25 +73,25 @@ public class CColorQuantizer extends CSegmentationWorker {
 		CVectorMetric metric = new CVectorMetric(pixel);
 
 		color = new CColorMean[means];
-		map = new CSegmentMap(size.x, size.y, 0);
+		map = new CSegmentMap(size.width, size.height, 0);
 
 		// means initialization
 		for (i = 0; i < means; i++) {
 			color[i] = new CColorMean(bands);
-			x = (int) ((size.x - 1) * Math.random());
-			y = (int) ((size.y - 1) * Math.random());
+			x = (int) ((size.width - 1) * Math.random());
+			y = (int) ((size.height - 1) * Math.random());
 			raster.getPixel(x, y, color[i].color);
 		}
 
 		// recounting means
 		for (i = 0; i < iters; i++) {
 			setProgress(i * 100 / iters);
-			x = (int) ((size.x - 1) * Math.random());
-			y = (int) ((size.y - 1) * Math.random());
+			x = (int) ((size.width - 1) * Math.random());
+			y = (int) ((size.height - 1) * Math.random());
 			raster.getPixel(x, y, pixel); // pixel is randomly choosed
 			metric.setRef(pixel);
 			Arrays.sort(color, metric);
-			for (j = 0; j < Neigh; j++) {
+			for (j = 0; j < evaluatedNeighbors; j++) {
 				color[j].color = CBasic.sum(color[j].color,
 						CBasic.scalar(1.0 / (j + 1) / (1 + color[j].weight),
 						CBasic.diff(pixel, color[j].color)));
@@ -77,8 +99,8 @@ public class CColorQuantizer extends CSegmentationWorker {
 			}
 			setProgress(100 * i / iters);
 		}
-		for (x = 0; x < size.x; x++) {
-			for (y = 0; y < size.y; y++) {
+		for (x = 0; x < size.width; x++) {
+			for (y = 0; y < size.height; y++) {
 				raster.getPixel(x, y, pixel);
 				//pixel = CVectorWorker.normalize(pixel);
 				nearest = getNearestMean(pixel, color);
@@ -88,7 +110,7 @@ public class CColorQuantizer extends CSegmentationWorker {
 			}
 		}
 		//image.setData(out);
-		System.out.println("Error: " + err / (size.x * size.y));
+		System.out.println("Error: " + err / (size.width * size.height));
 		setGraph();
 
 		return getSegmentMap();
@@ -112,6 +134,12 @@ public class CColorQuantizer extends CSegmentationWorker {
 		return nearest;
 	}
 
+	/**
+	 * Mean graph shows how precise is approximation by means. Set of colours
+	 * contains few highlighted points (means).
+	 *
+	 * TODO: For usage 3D must be mapped.
+	 */
 	public void setGraph() {
 		final int width = 380, height = 380;
 		final int cross = 5;
@@ -153,25 +181,28 @@ public class CColorQuantizer extends CSegmentationWorker {
 		return graphImage;
 	}
 
+	/**
+	 * Segment map is generated from means here. For more
+	 * @see workers.segmentation.CSegmentMap
+	 */
 	private void createMap() {
-		int x, y, segment_size;
-		int look_for, minX, maxX, minY, maxY;
-		LinkedList<Point> new_segment = new LinkedList<Point>();
-		Point checked;
-		int[] segment_color;
+		int segmentSizePixels;
+		int segmentId, minX, maxX, minY, maxY;
+		LinkedList<Point> segmentsFound = new LinkedList<Point>();
+		int[] segmentColor;
 
-		for (x = 0; x < original.getWidth(); x++) {
-			for (y = 0; y < original.getHeight(); y++) {
-				if ((look_for = map.getNumberAt(x, y)) < 0) { // which are marked and not associated
-					segment_color = color[-map.getNumberAt(x, y) - 1].getColor();
+		for (int x = 0; x < original.getWidth(); x++) {
+			for (int y = 0; y < original.getHeight(); y++) {
+				if ((segmentId = map.getNumberAt(x, y)) < 0) { // which are marked and not associated
+					segmentColor = color[-map.getNumberAt(x, y) - 1].getColor();
 					map.setNumberAt(x, y, map.getNumSegments());
 
-					new_segment.add(new Point(x, y)); // first point to check
-					segment_size = 1;
+					segmentsFound.add(new Point(x, y)); // first point to check
+					segmentSizePixels = 1;
 					maxX = maxY = -1;
-					minY = minX = Math.max(size.x, size.y);
-					while (!new_segment.isEmpty()) {
-						checked = new_segment.removeFirst();
+					minY = minX = Math.max(size.width, size.height);
+					while (!segmentsFound.isEmpty()) {
+						Point checked = segmentsFound.removeFirst();
 						// change border
 						if (checked.x > maxX) {
 							maxX = checked.x;
@@ -188,25 +219,25 @@ public class CColorQuantizer extends CSegmentationWorker {
 						//if (maxX >= size.x)
 						// System.out.println(checked.x+", "+checked.y);
 						// add all neibouroughs
-						if (checked.x > 0 && map.getNumberAt(checked.x - 1, checked.y) == look_for) {
+						if (checked.x > 0 && map.getNumberAt(checked.x - 1, checked.y) == segmentId) {
 							map.setNumberAt(checked.x - 1, checked.y, map.getNumSegments());
-							new_segment.add(new Point(checked.x - 1, checked.y));
+							segmentsFound.add(new Point(checked.x - 1, checked.y));
 						}
-						if (checked.y + 1 < size.y && map.getNumberAt(checked.x, checked.y + 1) == look_for) {
+						if (checked.y + 1 < size.height && map.getNumberAt(checked.x, checked.y + 1) == segmentId) {
 							map.setNumberAt(checked.x, checked.y + 1, map.getNumSegments());
-							new_segment.add(new Point(checked.x, checked.y + 1));
+							segmentsFound.add(new Point(checked.x, checked.y + 1));
 						}
-						if (checked.y > 0 && map.getNumberAt(checked.x, checked.y - 1) == look_for) {
+						if (checked.y > 0 && map.getNumberAt(checked.x, checked.y - 1) == segmentId) {
 							map.setNumberAt(checked.x, checked.y - 1, map.getNumSegments());
-							new_segment.add(new Point(checked.x, checked.y - 1));
+							segmentsFound.add(new Point(checked.x, checked.y - 1));
 						}
-						if (checked.x + 1 < size.x && map.getNumberAt(checked.x + 1, checked.y) == look_for) {
+						if (checked.x + 1 < size.width && map.getNumberAt(checked.x + 1, checked.y) == segmentId) {
 							map.setNumberAt(checked.x + 1, checked.y, map.getNumSegments());
-							new_segment.add(new Point(checked.x + 1, checked.y));
+							segmentsFound.add(new Point(checked.x + 1, checked.y));
 						}
-						segment_size++;
+						segmentSizePixels++;
 					}
-					map.addSegment(new CSegment(minX, minY, maxX + 1, maxY + 1, map.getNumSegments(), segment_size, segment_color));
+					map.addSegment(new CSegment(minX, minY, maxX + 1, maxY + 1, map.getNumSegments(), segmentSizePixels, segmentColor));
 				}
 			}
 		}
@@ -240,5 +271,38 @@ public class CColorQuantizer extends CSegmentationWorker {
 	@Override
 	public String getWorkerName() {
 		return "Color quantization";
+	}
+
+	@Override
+	public boolean confirmDialog() {
+		try {
+			means = Integer.valueOf(numOfColorsInput.getText());
+			if (means <= 0 || means > 65535) {
+				logger.log(Level.WARNING, "Unsupported number of means. Value must be between: 0-65535. Using default value: {0}", MEANS_DEFAULT);
+				means = MEANS_DEFAULT;
+			}
+		} catch (NumberFormatException nfe) {
+			logger.log(Level.WARNING, "Value set by user is not a number. Used default number of colour means: {0}", MEANS_DEFAULT);
+		}
+
+		return true;
+	}
+
+	JTextField numOfColorsInput = new JTextField(MEANS_DEFAULT);
+
+	/**
+	 * Creates inputs for number of colour means. TODO: number of evaluated neighbors and number of iterations
+	 * @return created dialog for user
+	 */
+	@Override
+	public JDialog getParamSettingDialog() {
+		JPanel content = new JPanel();
+
+		TableLayout layout = new TableLayout(new double[]{200,100}, new double[]{TableLayout.FILL});
+		content.setLayout(layout);
+		content.add(new JLabel("Set number of output colours:"),"0, 0");
+		content.add(numOfColorsInput,"1, 0");
+
+		return CWorkerDialogFactory.createOkCancelDialog(this, content);
 	}
 }

@@ -4,22 +4,40 @@
  */
 package workers.analyse;
 
-import java.awt.Point;
+import fresco.swing.CWorkerDialogFactory;
+import info.clearthought.layout.TableLayout;
+import java.awt.Dimension;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 /**
+ * Basic edge detector. Uses Laplacian of Gaussian as a filter. Two different
+ * sizes are accepted - matrix 5x5 or 3x3
+ *
  * @author gimli
  * @version 10.6.2009
  */
 public class CLaplacian extends CAnalysisWorker {
 
-	Point size;
-	BufferedImage data, image;
-	Raster input;
-	WritableRaster output;
-	int bands, matrix_size;
+	private final static int FILTER_SIZE_DEFAULT = 3;
+
+	/** size of input image */
+	private final Dimension size;
+	/** output image - with edges */
+	private final BufferedImage image;
+	/** input raster */
+	private final Raster input;
+	/** Number of colour bans */
+	private final int bands;
+	/** Size of filter (3 or 5)*/
+	int filterSize;
+	/** Precomputed filters */
 	public static int[][] M3 = {{1, 1, 1}, {1, -8, 1}, {1, 1, 1}};
 	public static int[][] M5 = {{0, 0, 1, 0, 0},
 		{0, 1, 2, 1, 0},
@@ -27,12 +45,11 @@ public class CLaplacian extends CAnalysisWorker {
 		{0, 1, 2, 1, 0},
 		{0, 0, 1, 0, 0}};
 
-	public CLaplacian(BufferedImage original, int m_size) {
-		size = new Point(original.getWidth(), original.getHeight());
-		data = original;
-		input = data.getData();
-		matrix_size = (m_size == 5) ? 5 : 3;
-		image = new BufferedImage(size.x, size.y, BufferedImage.TYPE_INT_RGB);
+	public CLaplacian(BufferedImage original) {
+		size = new Dimension(original.getWidth(), original.getHeight());
+		input = original.getData();
+		filterSize = FILTER_SIZE_DEFAULT;
+		image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_RGB);
 		bands = original.getSampleModel().getNumBands();
 	}
 
@@ -43,17 +60,17 @@ public class CLaplacian extends CAnalysisWorker {
 		int[] sum = new int[bands];
 		WritableRaster raster = image.getRaster();
 
-		for (x = 0; x < size.x; x++) {
-			for (y = 0; y < size.y; y++) {
+		for (x = 0; x < size.width; x++) {
+			for (y = 0; y < size.height; y++) {
 
-				if (x - (matrix_size - 1) / 2 < 0
-						|| x + (matrix_size - 1) / 2 > size.x - 1
-						|| y - (matrix_size - 1) / 2 < 0
-						|| y + (matrix_size - 1) / 2 > size.y - 1) {
+				if (x - (filterSize - 1) / 2 < 0
+						|| x + (filterSize - 1) / 2 > size.width - 1
+						|| y - (filterSize - 1) / 2 < 0
+						|| y + (filterSize - 1) / 2 > size.height - 1) {
 					input.getPixel(x, y, sum);
 				} else {
 					for (b = 0; b < bands; b++) {
-						A = input.getSamples(x - (matrix_size - 1) / 2, y - (matrix_size - 1) / 2, matrix_size, matrix_size, b, A);
+						A = input.getSamples(x - (filterSize - 1) / 2, y - (filterSize - 1) / 2, filterSize, filterSize, b, A);
 						sum[b] = getLoG(A);
 					}
 					for (b = 0; b < bands; b++) {
@@ -66,7 +83,7 @@ public class CLaplacian extends CAnalysisWorker {
 					}
 				}
 				raster.setPixel(x, y, sum);
-				setProgress(100 * (x * size.y + y) / (size.x * size.y));
+				setProgress(100 * (x * size.height + y) / (size.width * size.height));
 			}
 		}
 
@@ -82,14 +99,43 @@ public class CLaplacian extends CAnalysisWorker {
 	private int getLoG(int[] A) {
 		int i, j;
 		int out = 0;
-		int[][] M = (matrix_size == 5) ? M5 : M3;
+		int[][] M = (filterSize == 5) ? M5 : M3;
 
-		for (i = 0; i < matrix_size; i++) {
-			for (j = 0; j < matrix_size; j++) {
-				out += M[i][j] * A[i + j * matrix_size];
+		for (i = 0; i < filterSize; i++) {
+			for (j = 0; j < filterSize; j++) {
+				out += M[i][j] * A[i + j * filterSize];
 			}
 		}
 
 		return out;
+	}
+
+	@Override
+	public boolean hasDialog() {
+		return true;
+	}
+
+	private JComboBox filterSizeInput = new JComboBox();
+
+	@Override
+	public boolean confirmDialog() {
+		filterSize = (Integer)filterSizeInput.getSelectedItem();
+		return true;
+	}
+
+	@Override
+	public JDialog getParamSettingDialog() {
+		JPanel content = new JPanel();
+
+		filterSizeInput.addItem((Integer) 3);
+		filterSizeInput.addItem((Integer) 5);
+
+		TableLayout layout = new TableLayout(new double[]{200,100}, new double[]{TableLayout.FILL});
+		content.setLayout(layout);
+
+		content.add(new JLabel("Set filter size: "),"0,0");
+		content.add(filterSizeInput, "1,0");
+
+		return CWorkerDialogFactory.createOkCancelDialog(this, content);
 	}
 }

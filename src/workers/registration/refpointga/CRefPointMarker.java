@@ -74,7 +74,7 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 	private final int width, height;
 	/** Evolution generations */
 	private int generations = GENERATIONS_DEFAULT;
-	/** Fitness threshold */
+	/** Fitness threshold. If an offspring reaches value above this threshold than will be published in output population */
 	private double fitnessThreshold = FITNESS_THRESHOLD_DEFAULT;
 	/** Similarity measure radius */
 	private int radius = RADIUS_DEFAULT;
@@ -226,13 +226,39 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 	JTextField measuredAreaInput;
 	/**
 	 * Different size of compared areas can cause variation of absolute value
-	 * of similarity measure. This should be handeled here.
+	 * of similarity measure. This should be handled here.
 	 * TODO: For some measures can be precomputed and automatically set
 	 */
-	JTextField similarityThresholdInput;
+	JTextField fitnessThresholdInput;
 
 	@Override
 	public boolean confirmDialog() {
+		try {
+			generations = Integer.valueOf(gensInput.getText());
+			if (generations < 1) {
+				logger.log(Level.WARNING, "Value is lower than zero. Using default value: {0}", GENERATIONS_DEFAULT);
+				generations = GENERATIONS_DEFAULT;
+			}
+		} catch (NumberFormatException nfe) {
+			logger.log(Level.WARNING, "Value generations is not a number! Using default value: {0}", GENERATIONS_DEFAULT);
+		}
+
+		try {
+			radius = Integer.valueOf(measuredAreaInput.getText());
+			if (radius < 1) {
+				logger.log(Level.WARNING, "Value is lower than zero. Using default value: {0}", RADIUS_DEFAULT);
+				radius = RADIUS_DEFAULT;
+			}
+		} catch (NumberFormatException nfe) {
+			logger.log(Level.WARNING, "Value for measured area input is not a integer number! Using default value: {0}", RADIUS_DEFAULT);
+		}
+
+		try {
+			fitnessThreshold = Integer.valueOf(fitnessThresholdInput.getText());
+		} catch (NumberFormatException nfe) {
+			logger.log(Level.WARNING, "Value for fitness threshold is not a integer number! Using default value: {0}", FITNESS_THRESHOLD_DEFAULT);
+		}
+
 		return true;
 	}
 
@@ -242,9 +268,7 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 
 		JPanel content = new JPanel();
 		TableLayout layout = new TableLayout (new double[]{0.6, 0.4},
-				new double[]{TableLayout.FILL, TableLayout.FILL, TableLayout.FILL,
-				TableLayout.FILL, TableLayout.FILL, TableLayout.FILL,
-				TableLayout.FILL, TableLayout.FILL, TableLayout.FILL});
+				new double[]{TableLayout.FILL, TableLayout.FILL, TableLayout.FILL});
 
 
 		layout.setHGap(5);
@@ -260,7 +284,7 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 		content.add(gensInput, "1, 0");
 
 		// size of compared area
-		JLabel similarityRadius = new JLabel("Radius of comparedArea: ");
+		JLabel similarityRadius = new JLabel("Radius of compared area: ");
 		content.add(similarityRadius, "0, 1");
 		if (measuredAreaInput == null) {
 			measuredAreaInput = new JTextField(""+radius);
@@ -268,12 +292,12 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 		content.add(measuredAreaInput, "1, 1");
 
 		// threashold of similarity
-		JLabel similarityThreshold = new JLabel("Similarity threshold: ");
+		JLabel similarityThreshold = new JLabel("Fitness threshold: ");
 		content.add(similarityThreshold, "0, 2");
-		if (similarityThresholdInput == null) {
-			similarityThresholdInput = new JTextField(""+FITNESS_THRESHOLD_DEFAULT);
+		if (fitnessThresholdInput == null) {
+			fitnessThresholdInput = new JTextField(""+fitnessThreshold);
 		}
-		content.add(similarityThresholdInput, "1, 2");
+		content.add(fitnessThresholdInput, "1, 2");
 
 		JDialog dialog = CWorkerDialogFactory.createOkCancelDialog(this, content);
 
