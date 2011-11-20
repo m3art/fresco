@@ -4,9 +4,15 @@
  */
 package workers.analyse;
 
+import fresco.swing.CWorkerDialogFactory;
+import info.clearthought.layout.TableLayout;
 import workers.segmentation.*;
 import java.awt.image.*;
 import java.awt.*;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSlider;
 
 /**
  * Colour implementation of canny edge detector.
@@ -31,7 +37,7 @@ public class CCannyEdgeDetector extends CAnalysisWorker {
 	 * It is not necessary to use thresholds, in this case only convolution is
 	 * made.
 	 */
-	private int lowThreshold = -1, highThreshold = -1;
+	private double lowThreshold = 0.3f, highThreshold = 0.7f;
 
 	/**
 	 * Basic nonparametric usage of canny edge detector. No thresholding is used.
@@ -94,5 +100,47 @@ public class CCannyEdgeDetector extends CAnalysisWorker {
 	@Override
 	public String getWorkerName() {
 		return "Edge detector";
+	}
+
+	@Override
+	public boolean hasDialog() {
+		return true;
+	}
+
+	private final int SLIDER_MAX = 100;
+	static JSlider lowThresh, highThresh;
+
+	@Override
+	public JDialog getParamSettingDialog() {
+		JPanel content = new JPanel();
+		JPanel inputs = new JPanel();
+
+		TableLayout layout = new TableLayout(new double[]{5, TableLayout.FILL, 5, TableLayout.FILL, 5},new double[]{5, TableLayout.FILL, 5, TableLayout.FILL, 5});
+
+		if (lowThresh == null) {
+			lowThresh = new JSlider(JSlider.HORIZONTAL, 1, SLIDER_MAX, 30);
+			highThresh = new JSlider(JSlider.HORIZONTAL, 1, SLIDER_MAX, 70);
+		}
+
+		inputs.setLayout(layout);
+		inputs.add(new JLabel("Low threshold: "), "1, 1");
+		inputs.add(lowThresh, "3, 1");
+		inputs.add(new JLabel("High threshold: "), "1, 3");
+		inputs.add(highThresh, "3, 3");
+
+		content.setLayout(new BorderLayout(5,5));
+		content.add(new JLabel("<html><body>Set thresholds for edge detection. <br />Low threshold is used for pixels neighboring with edge.</body></html>"), BorderLayout.NORTH);
+		content.add(inputs, BorderLayout.CENTER);
+
+		return CWorkerDialogFactory.createOkCancelDialog(this, content);
+	}
+
+	@Override
+	public boolean confirmDialog() {
+//		detector.setLowThreshold(40 * lowThresh.getValue()/SLIDER_MAX);
+//		detector.setHighThreshold(40 * highThresh.getValue()/SLIDER_MAX);
+		lowThreshold = 0.3f;
+		highThreshold = 0.7f;
+		return true;
 	}
 }

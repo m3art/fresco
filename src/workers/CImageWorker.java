@@ -93,6 +93,10 @@ public abstract class CImageWorker<T, V> extends SwingWorker<T, V> implements II
 
 	public abstract String getWorkerName();
 
+	public boolean hasDialog() {
+		return false;
+	}
+
 	/**
 	 * Evaluate values set by user. Default Worker does not support user input.
 	 * In this case is call of this method illegal and
