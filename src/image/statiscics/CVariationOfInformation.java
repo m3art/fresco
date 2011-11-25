@@ -16,26 +16,25 @@ import java.util.logging.Logger;
  *
  * @author gimli
  */
-public class CMutualInformation {
+public class CVariationOfInformation {
 
 	public static int range = 256, colorBand = 1, colorBand2 = 1;
 	Raster in1, in2;
 	int numOfPixels;
 	int[] histX, histY;
 	int[][] histXY;
-	private static final Logger logger = Logger.getLogger(CMutualInformation.class.getName());
+	private static final Logger logger = Logger.getLogger(CVariationOfInformation.class.getName());
 
 	/**
-	 * Constructor must obtain two images with the same size
+	 * Constructor must obtain two images with the same size in gray scale
+	 * NOTE: probably three band images are not necessary
 	 * @param input1
 	 * @param input2
 	 * @throws java.io.IOException if the size of image not correspond
 	 */
-	public CMutualInformation(final BufferedImage input1, final BufferedImage input2, int band1, int band2) {
+	public CVariationOfInformation(final BufferedImage input1, final BufferedImage input2) {
 		in1 = input1.getData();
 		in2 = input2.getData();
-		//colorBand = band1;
-		//colorBand2 = band2;
 		numOfPixels = in1.getWidth() * in2.getHeight();
 	}
 
@@ -70,7 +69,7 @@ public class CMutualInformation {
 	 * @param pixel2 color from the second image
 	 * @return value of mutual information measure
 	 */
-	public double entropy(int[] pixel1, int[] pixel2) {
+	public double pixelGain(int[] pixel1, int[] pixel2) {
 		double Hxy = 0, Hx = 0, Hy = 0;
 
 		Hx += entropyGain(histX[pixel1[colorBand]]);
@@ -90,7 +89,7 @@ public class CMutualInformation {
 			for (int y = 0; y < rect1.height; y++) {
 				in1.getPixel(rect1.x + x, rect1.y + y, pixel1);
 				in2.getPixel(rect2.x + x, rect2.y + y, pixel2);
-				out += entropy(pixel1, pixel2) / ((x - center.x) * (x - center.x) + (y - center.y) * (y - center.y) + 1);
+				out += pixelGain(pixel1, pixel2) / ((x - center.x) * (x - center.x) + (y - center.y) * (y - center.y) + 1);
 				weight += 1 / ((x - center.x) * (x - center.x) + (y - center.y) * (y - center.y) + 1);
 			}
 		}
@@ -99,7 +98,7 @@ public class CMutualInformation {
 	}
 
 	/**
-	 * From the probability value counts entropy value
+	 * From the probability value counts pixelGain value
 	 * @param value probability of color in the image
 	 * @return entropyGain value for this corresponding color
 	 */

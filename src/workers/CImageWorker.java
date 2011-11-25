@@ -13,7 +13,7 @@ import javax.swing.SwingWorker;
 import workers.analyse.CCannyEdgeDetector;
 import workers.analyse.CDiff;
 import workers.analyse.CLaplacian;
-import workers.analyse.CMutualInformationGraph;
+import workers.analyse.CVariationOfInformationGraph;
 import workers.analyse.CPatternAnalyzer;
 import workers.correction.CAdaptiveHistogramEnhancing;
 import workers.correction.CColorShiftWorker;
@@ -68,8 +68,8 @@ public abstract class CImageWorker<T, V> extends SwingWorker<T, V> implements II
 				return new CDiff(CData.getImage(CData.showImage[0]).getImage(),
 						CData.getImage(CData.showImage[2]).getImage());
 			case mutualInfo:
-				return new CMutualInformationGraph(CData.getImage(CData.showImage[0]).getImage(),
-						CData.getImage(CData.showImage[2]).getImage(), (Integer) (params[0]), (Integer) (params[1]));
+				return new CVariationOfInformationGraph(CData.getImage(CData.showImage[0]).getImage(),
+						CData.getImage(CData.showImage[2]).getImage());
 			case colorQuantization:
 				BufferedImage image = CData.getImage(CData.showImage[0]).getImage();
 				return new CColorQuantizer(CData.getImage(CData.showImage[0]).getImage());

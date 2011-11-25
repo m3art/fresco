@@ -6,46 +6,42 @@ package workers.analyse;
 
 import image.converters.Crgb2gray;
 import image.converters.Crgb2hsv;
-import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import image.statiscics.CMutualInformation;
+import image.statiscics.CVariationOfInformation;
 
 /**
+ * Mutual information is computed over two gray scale images. Mutual information
+ * is defined by pixelGain and joined pixelGain of images. For more see wikipedia.
+ * Worker takes two images and computes gain of each pixel to MI. This value is
+ * scaled and drawn.
  *
  * @author gimli
  */
-public class CMutualInformationGraph extends CAnalysisWorker {
+public class CVariationOfInformationGraph extends CAnalysisWorker {
 
+	/** Measured images */
 	private BufferedImage imageA, imageB;
-	private int bandA, bandB; // if images are multidimensional (rgb, hsv, etc) it's necessary to define color band
-	private static final Logger logger = Logger.getLogger(CMutualInformationGraph.class.getName());
+	/** logging tool */
+	private static final Logger logger = Logger.getLogger(CVariationOfInformationGraph.class.getName());
 
-	public CMutualInformationGraph(BufferedImage imageA, BufferedImage imageB, int band1, int band2) {
+	public CVariationOfInformationGraph(BufferedImage imageA, BufferedImage imageB) {
 		this.imageA = /*imageA; /*/ (new Crgb2gray()).convert(imageA);
 		this.imageB = /*imageB; /*/ (new Crgb2gray()).convert(imageB);
-		bandA = band1;
-		bandB = band2;
 	}
 
 	/**
-	 * Zavedeni pochybne metriky - mutual information
-	 * Hodnota je tim vetsi, cim podobnejsi jsou si pixely (entropii) v obrazku
-	 * souviset mouhou ruzne barevne kanaly
-	 *
-	 * Teoreticky ma smysl pocitat MI na nejakem netrivialnim okoli - cimz by
-	 * se mel snizit vliv sumu
+	 * MI is not a metric. For such purpose we use Variation of information.
 	 * @return heat map of Mutual information of two input images
 	 */
 	@Override
 	protected BufferedImage doInBackground() {
 		try {
-			CMutualInformation mi = new CMutualInformation(imageA, imageB, bandA, bandB);
-			Rectangle bounds = new Rectangle(0, 0, imageA.getWidth(), imageA.getHeight());
+			CVariationOfInformation mi = new CVariationOfInformation(imageA, imageB);
 
 			logger.log(Level.INFO, "{0} started", getWorkerName());
 			mi.init();
@@ -70,7 +66,7 @@ public class CMutualInformationGraph extends CAnalysisWorker {
 					// FIXME: pridat velikost regionu do parametru pro uzivatele
 //					miValues[x][y] = mi.MIOnRects(CMaximalRectangle.getRect(new Point(x,y), 2, bounds),
 //							CMaximalRectangle.getRect(new Point(x,y), 2, bounds));
-					miValues[x][y] = mi.entropy(pixelA, pixelB);
+					miValues[x][y] = mi.pixelGain(pixelA, pixelB);
 					if (max < miValues[x][y]) {
 						max = miValues[x][y];
 					}

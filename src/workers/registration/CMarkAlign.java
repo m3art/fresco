@@ -12,7 +12,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.io.IOException;
 import java.util.LinkedList;
-import image.statiscics.CMutualInformation;
+import image.statiscics.CVariationOfInformation;
 import utils.vector.CBasic;
 
 /**
@@ -20,8 +20,10 @@ import utils.vector.CBasic;
  */
 public class CMarkAlign {
 
-	static int vicinity = 15; // searched vicinity for align
-	static int area = 18; // compared areas - for counting Mutual Information
+	/** searched vicinity for align */
+	static int vicinity = 15;
+	/** compared areas - for counting Variation of Information */
+	static int area = 18;
 
 	/**
 	 * Main function of the class
@@ -39,12 +41,12 @@ public class CMarkAlign {
 		boolean aligned = false;
 		int i, x, y, bestX, bestY;
 		double mi = 0, bestMI = 0;
-		CMutualInformation worker;
+		CVariationOfInformation worker;
 		Rectangle rect1, rect2;
 		Point mark1, mark2;
 		Dimension start, end;
 
-		worker = new CMutualInformation((new Crgb2hsv()).convert(input1), (new Crgb2hsv()).convert(input2), 2, 2);
+		worker = new CVariationOfInformation((new Crgb2hsv()).convert(input1), (new Crgb2hsv()).convert(input2));
 
 		for (i = 0; i < marks2.size(); i++) {
 			aligned = false;

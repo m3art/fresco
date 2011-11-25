@@ -134,44 +134,25 @@ public class CUserActionListener implements ActionListener, ItemListener {
 				case capture:
 					manager.captureImage();
 					break;
-				case sobel:
-					manager.runImageWorker(id, null);
+				case registerMarks:
+					CData.setTool(Tool.regMarker);
+					logger.log(Level.INFO, "New tool selected: {0}", CData.getTool().name());
 					break;
+				case sobel:
 				case rotateLeft:
 				case rotateRight:
 				case verticalFlip:
 				case mirrorFlip:
 				case diff:
-//					throw new UnsupportedOperationException("Not yet implemented");
 				case register:
-					manager.runImageWorker(id, null);
-					break;
 				case ahe:
-					manager.runImageWorker(id, null);
-					break;
 				case colorShift:
-					manager.runImageWorker(id, null);
-					break;
 				case patternAnalyzer:
-					manager.runImageWorker(id, null);
-					break;
 				case mutualInfo:
-					// FIXME: params band1 and band2 are necessary
-					Object[] params = {(Integer) 1, (Integer) 2};
-					manager.runImageWorker(id, params);
-					break;
 				case colorQuantization:
-					manager.runImageWorker(id, null);
-					break;
 				case laplace:
-					manager.runImageWorker(id, null);
-					break;
-				case registerMarks:
-					CData.setTool(Tool.regMarker);
-					logger.log(Level.INFO, "New tool selected: {0}", CData.getTool().name());
-					break;
 				case registrationMarkSearch:
-					manager.runImageWorker(RegID.registrationMarkSearch, null);
+					manager.runImageWorker(id, null);
 					break;
 			}
 		}
