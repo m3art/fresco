@@ -64,9 +64,10 @@ PROPERTIES NAMING CONVENTIONS:
 		<include name="**/*.xml"/>
 	</fileset>
 
+	<property name="lib.dir" value="${basedir}/lib" />
 	<path id="fresco.classpath">
 		<pathelement path="${out.dir}"/>
-		<pathelement location="./lib/*.jar" />
+		<fileset dir="${lib.dir}" includes="*.jar"/>
 	</path>
 
 	<target name="fresco-compile-prepare">
@@ -119,9 +120,8 @@ PROPERTIES NAMING CONVENTIONS:
 	</target>
 
 	<property name="web.dir" value="${basedir}/web" />
-	<property name="lib.dir" value="${basedir}/lib" />
 	<fileset id="fresco.libs" dir="${lib.dir}">
-		<filename name="**/*.jar" />
+		<filename name="*" />
 	</fileset>
 	<property name="jnlp.template" value="fresco.jnlp.template" />
 
