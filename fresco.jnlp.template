@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jnlp spec="1.0+" codebase="http://m3art.utia.cas.cz/fresco/" href="fresco.jnlp">
+<jnlp spec="1.0+" codebase="http://m3art.utia.cas.cz/fresco-dist/" href="fresco.jnlp">
     <information>
         <title>Fresco</title>
         <vendor>m3art team</vendor>
-		<homepage href="http://m3art.utia.cas.cz/fresco/"/>
+		<homepage href="http://m3art.utia.cas.cz/fresco-dist/"/>
 	    <description>Software for virtual image restoration</description>
-	    <icon href="http://m3art.utia.cas.cz/fresco/icon.gif"/>
+	    <icon href="http://m3art.utia.cas.cz/fresco-dist/icon.gif"/>
 		<offline-allowed/>
     </information>
 	<security>
