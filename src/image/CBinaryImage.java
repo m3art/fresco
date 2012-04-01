@@ -4,7 +4,7 @@
  */
 package image;
 
-import image.converters.Crgb2gray;
+import image.converters.Crgb2grey;
 import it.tidalwave.imageio.util.Logger;
 import java.awt.image.Raster;
 
@@ -49,7 +49,7 @@ public class CBinaryImage {
 		for (int x = 0; x < width; x++) {
 			for (int y = 0; y < height; y++) {
 				pixel = raster.getPixel(x, y, pixel);
-				if (threshold < Crgb2gray.convertToOneValue(pixel)) {
+				if (threshold < Crgb2grey.convertToOneValue(pixel)) {
 					image[x][y] = true;
 					edgePixels++;
 				}

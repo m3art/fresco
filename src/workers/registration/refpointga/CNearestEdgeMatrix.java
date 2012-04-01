@@ -6,6 +6,7 @@ package workers.registration.refpointga;
 
 import image.CBinaryImage;
 import java.awt.Point;
+import java.awt.geom.Point2D;
 import utils.metrics.CEuclidMetrics;
 import utils.vector.CMatrixGenerator;
 
@@ -20,7 +21,7 @@ public class CNearestEdgeMatrix {
 	/** size of matrix */
 	final int width, height;
 	/** Content of CNearestEdgeMatrix, field contains nearest Pixel for each position in image*/
-	Point[][] matrix;
+	Point2D.Double[][] matrix;
 	/** If no edge is in CBinaryImage this Object is not valid. Getters throws UnsupportedOperationException in this case. */
 	boolean isValid;
 
@@ -34,7 +35,7 @@ public class CNearestEdgeMatrix {
 		// eucleidian distance form matrix[x][y]
 		double[][] distance = CMatrixGenerator.create(width, height, Double.MAX_VALUE);
 
-		matrix = new Point[width][height];
+		matrix = new Point2D.Double[width][height];
 
 		// evaluate nearest pixel from top left and bottom right corner
 		int k, l; //coords form bottom right
@@ -42,7 +43,7 @@ public class CNearestEdgeMatrix {
 			for (int y = 0; y < height; y++) {
 				matrix[x][y] = evaluate(x, y, i);
 				if (matrix[x][y] != null) {
-					distance[x][y] = CEuclidMetrics.distance(matrix[x][y], new Point(x, y));
+					distance[x][y] = CEuclidMetrics.distance(matrix[x][y], new Point2D.Double(x, y));
 				} else {
 					distance[x][y] = Double.MAX_VALUE;
 				}
@@ -52,7 +53,7 @@ public class CNearestEdgeMatrix {
 
 				matrix[k][l] = evaluate(k, l, i);
 				if (matrix[k][l] != null) {
-					distance[k][l] = CEuclidMetrics.distance(matrix[k][l], new Point(k, l));
+					distance[k][l] = CEuclidMetrics.distance(matrix[k][l], new Point2D.Double(k, l));
 				} else {
 					distance[k][l] = Double.MAX_VALUE;
 				}
@@ -62,10 +63,10 @@ public class CNearestEdgeMatrix {
 		isValid = checkSettings(width, height);
 	}
 
-	private Point evaluate(final int x, final int y, final CBinaryImage i) {
-		Point center = new Point(x, y);
+	private Point2D.Double evaluate(final int x, final int y, final CBinaryImage i) {
+		Point2D.Double center = new Point2D.Double(x, y);
 		double min = Double.MAX_VALUE, distance;
-		Point nearest = null;
+		Point2D.Double nearest = null;
 
 		if (i.isOne(x, y)) {
 			return center;
@@ -95,9 +96,9 @@ public class CNearestEdgeMatrix {
 	 * @return nearest edge point, if there is several of them, one is chosen.
 	 * @throws UnsupportedOperationException in case when no edge is in image
 	 */
-	public Point getNearest(final Point p) {
+	public Point2D.Double getNearest(final Point2D.Double p) {
 		if (isValid) {
-			return matrix[Math.max(0, Math.min(p.x, width - 1))][Math.max(0, Math.min(p.y, height - 1))];
+			return matrix[Math.max(0, Math.min((int)Math.round(p.x), width - 1))][Math.max(0, Math.min((int)Math.round(p.y), height - 1))];
 		} else {
 			throw new UnsupportedOperationException("No edges in BinaryImage. Try different treshold.");
 		}
@@ -109,7 +110,7 @@ public class CNearestEdgeMatrix {
 	 * @return nearest edge point, if there is several of them, one is chosen.
 	 * @throws UnsupportedOperationException in case when no edge is in image
 	 */
-	public Point getNearest(int x, int y) {
+	public Point2D.Double getNearest(int x, int y) {
 		if (isValid) {
 			return matrix[x][y];
 		} else {

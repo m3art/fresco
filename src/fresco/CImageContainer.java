@@ -12,6 +12,7 @@ import java.awt.image.*;
 import javax.swing.*;
 import java.util.LinkedList;
 import java.awt.*;
+import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -36,7 +37,7 @@ public class CImageContainer {
 	/** Cached icon */
 	private ImageIcon icon;
 	/** Points added into image - registration purposes */
-	private LinkedList<Point> regMarks;
+	private LinkedList<Point2D.Double> regMarks;
 	/** Source of image */
 	private File file;
 	/** Array of integers. Each pixel belongs to one segment */
@@ -208,7 +209,7 @@ public class CImageContainer {
 			case GRAY_SCALE:
 				if (changed || gray == null) {
 					logger.log(Level.FINE, "Transforming image to {0}", screen);
-					gray = (new Crgb2gray()).convert(original);
+					gray = (new Crgb2grey()).convert(original);
 				}
 				return gray;
 			case FRIST_BAND:
@@ -245,11 +246,11 @@ public class CImageContainer {
 	 */
 	public void putMark(int x, int y) {
 		if (regMarks == null) {
-			regMarks = new LinkedList<Point>();
+			regMarks = new LinkedList<Point2D.Double>();
 		}
 
 //		if (regMarks.size() < 4) {
-			regMarks.add(new Point(x, y));
+			regMarks.add(new Point2D.Double(x, y));
 			logger.log(Level.FINE, "Mark put at: [{0}, {1}]", new Object[]{x, y});
 //		}
 	}
@@ -261,7 +262,7 @@ public class CImageContainer {
 	 * @param y
 	 */
 	public void removeMark(int x, int y) {
-		for (Point mark : regMarks) {
+		for (Point2D.Double mark : regMarks) {
 			if (Math.abs(mark.x - x) < CImagePanel.CROSS_SIZE * 2 / (double) CData.getFocus() * 100
 					&& Math.abs(mark.y - y) < CImagePanel.CROSS_SIZE * 2 / (double) CData.getFocus() * 100) {
 				regMarks.remove(mark);
@@ -306,11 +307,11 @@ public class CImageContainer {
 		}
 	}
 
-	public LinkedList<Point> getMarks() {
+	public LinkedList<Point2D.Double> getMarks() {
 		return regMarks;
 	}
 
-	public void setMarks(LinkedList<Point> marks) {
+	public void setMarks(LinkedList<Point2D.Double> marks) {
 		regMarks = marks;
 	}
 

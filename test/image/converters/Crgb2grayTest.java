@@ -22,19 +22,19 @@ public class Crgb2grayTest {
 		System.out.println("convert");
 		int[] rgb = {128, 128, 128};
 		int[] expResult = {128, 128, 128};
-		int[] result = Crgb2gray.convert(rgb);
+		int[] result = Crgb2grey.convert(rgb);
 		assertArrayEquals(expResult, result);
 
 		rgb[0] = rgb[1] = 0;
 		rgb[2] = 255;
-		result = Crgb2gray.convert(rgb);
+		result = Crgb2grey.convert(rgb);
 		expResult[0] = expResult[1] = expResult[2] = 28;
 		assertArrayEquals(expResult, result);
 
 		rgb[0] = 115;
 		rgb[1] = 26;
 		rgb[2] = 155;
-		result = Crgb2gray.convert(rgb);
+		result = Crgb2grey.convert(rgb);
 		expResult[0] = expResult[1] = expResult[2] = 67;
 		assertArrayEquals(expResult, result);
 	}
@@ -44,7 +44,7 @@ public class Crgb2grayTest {
 		System.out.println("inverse");
 		int gray = 0;
 		int[] expResult = {0, 0, 0};
-		int[] result = Crgb2gray.inverse(gray);
+		int[] result = Crgb2grey.inverse(gray);
 		assertArrayEquals(expResult, result);
 	}
 
@@ -52,14 +52,14 @@ public class Crgb2grayTest {
 	public void testConvertPixel() {
 		System.out.println("convertPixel");
 		int[] rgb = {233, 12, 100};
-		Crgb2gray instance = new Crgb2gray();
+		Crgb2grey instance = new Crgb2grey();
 		int[] expResult = {88, 88, 88};
 		int[] result = instance.convertPixel(rgb);
 		assertArrayEquals(expResult, result);
 	}
 
 	/**
-	 * Test of convertImage method, of class Crgb2gray.
+	 * Test of convertImage method, of class Crgb2grey.
 	 */
 	@Test
 	public void testConvertImage() {
@@ -97,33 +97,33 @@ public class Crgb2grayTest {
 		Raster rgbRaster = Raster.createRaster(new BandedSampleModel(DataBuffer.TYPE_DOUBLE, 3, 3, 3), pixels, null);
 
 		double[][] expResult = {{127.3, 198.05, 143.58}, {52.73, 149.41, 62.18}, {77, 70.51, 70}};
-		double[][] result = Crgb2gray.convertImage(rgbRaster);
+		double[][] result = Crgb2grey.convertImage(rgbRaster);
 		assertArrayEquals(expResult[0], result[0], 0.01);
 		assertArrayEquals(expResult[1], result[1], 0.01);
 		assertArrayEquals(expResult[2], result[2], 0.01);
 	}
 
 	/**
-	 * Test of convertToOneValue method, of class Crgb2gray.
+	 * Test of convertToOneValue method, of class Crgb2grey.
 	 */
 	@Test
 	public void testConvertToOneValue_intArr() {
 		System.out.println("convertToOneValue");
 		int[] rgb = {10, 20, 30};
 		int expResult = 18;
-		int result = Crgb2gray.convertToOneValue(rgb);
+		int result = Crgb2grey.convertToOneValue(rgb);
 		assertEquals(expResult, result);
 	}
 
 	/**
-	 * Test of convertToOneValue method, of class Crgb2gray.
+	 * Test of convertToOneValue method, of class Crgb2grey.
 	 */
 	@Test
 	public void testConvertToOneValue_doubleArr() {
 		System.out.println("convertToOneValue");
 		double[] rgb = {30.2, 27.1, 255};
 		double expResult = 53.099;
-		double result = Crgb2gray.convertToOneValue(rgb);
+		double result = Crgb2grey.convertToOneValue(rgb);
 		assertEquals(expResult, result, 0.01);
 	}
 }

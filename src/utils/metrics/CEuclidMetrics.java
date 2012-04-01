@@ -4,7 +4,7 @@
  */
 package utils.metrics;
 
-import java.awt.Point;
+import java.awt.geom.Point2D;
 import workers.segmentation.CSegment;
 import utils.vector.CBasic;
 
@@ -14,7 +14,7 @@ import utils.vector.CBasic;
  */
 public class CEuclidMetrics extends CSegmentMetrics {
 
-	public static double distance(Point a, Point b) {
+	public static double distance(Point2D.Double a, Point2D.Double b) {
 		return Math.sqrt(Math.pow((a.x - b.x), 2) + Math.pow((a.y - b.y), 2));
 	}
 

@@ -16,6 +16,18 @@ import workers.segmentation.CSegmentMap;
  */
 public class CHistogram {
 
+	public static int[] getMonochromeHistogram(double[][] imageValues, int range) {
+		int[] hist = new int[range];
+
+		for (int x = 0; x < imageValues.length; x++) {
+			for (int y = 0; y < imageValues[x].length; y++) {
+				hist[(int)imageValues[x][y]]++;
+			}
+		}
+
+		return hist;
+	}
+
 	/**
 	 * Counts histogram from obtained image and put it into array of size
 	 *

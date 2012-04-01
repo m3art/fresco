@@ -22,7 +22,7 @@ class CPointMutation implements IMutationOperator<CPointAndTransformation> {
 	/** gimli based mutation */
 	public void mutateByGimli(CPointAndTransformation prototype) {
 
-		int x, y;
+		double x, y;
 		double dx, dy, angle, scale;
 
 		if (Math.random() < MUTATION_PROBABBILITY) {
@@ -59,7 +59,7 @@ class CPointMutation implements IMutationOperator<CPointAndTransformation> {
 
 	public void mutate(CPointAndTransformation prototype) {
 
-		int x, y;
+		double x, y;
 		double dx, dy, angle, scale;
 
 		double rangeFactor = CRefPointMarker.MUTATION_FACTOR * (1 - prototype.getFitness());

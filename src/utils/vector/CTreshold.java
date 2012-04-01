@@ -5,7 +5,7 @@
 package utils.vector;
 
 import image.CBinaryImage;
-import image.converters.Crgb2gray;
+import image.converters.Crgb2grey;
 import java.awt.image.WritableRaster;
 
 /**
@@ -30,7 +30,7 @@ public class CTreshold {
 		for (int x = 0; x < raster.getWidth(); x++) {
 			for (int y = 0; y < raster.getHeight(); y++) {
 				raster.getPixel(x, y, pixel);
-				value = Crgb2gray.convertToOneValue(pixel);
+				value = Crgb2grey.convertToOneValue(pixel);
 
 				if (value < threshold) {
 					bi.setValue(x, y, false);

@@ -31,7 +31,8 @@ public class CRouletteWheel implements ISelector<CGenotype> {
 			i++;
 		}
 
-		return population[i - 1];
+		if (i != 0) return population[i - 1];
+		else return population[i];
 	}
 
 	public void setFitnessSum(double newValue) {

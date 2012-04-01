@@ -8,7 +8,7 @@ package geneticalgorithms;
  * @author gimli
  * @version Oct 16, 2011
  */
-public abstract class CGenotype {
+public interface CGenotype {
 
-	public abstract double getFitness();
+	public double getFitness();
 }

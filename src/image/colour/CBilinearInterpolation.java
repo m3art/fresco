@@ -5,6 +5,7 @@
 package image.colour;
 
 import java.awt.geom.Point2D;
+import java.awt.image.Raster;
 
 /**
  * @author gimli
@@ -29,5 +30,23 @@ public class CBilinearInterpolation {
 
 		return beta * (alpha * leftTop + (1 - alpha) * rightTop)
 				+ (1 - beta) * (alpha * leftBottom + (1 - alpha) * rightBottom);
+	}
+
+	public static double[] getValue(Point2D.Double position, Raster image) {
+		double rgba[] = new double[image.getNumBands()];
+
+		if (position.x == (int)position.x && position.y == (int)position.y) {
+			return image.getPixel((int)position.x, (int)position.y, rgba);
+		}
+
+		for (int i = 0; i < image.getNumBands(); i++) {
+			rgba[i] = getValue(position, image.getSampleDouble((int) position.x, (int) position.y, i),
+					image.getSampleDouble((int) position.x + 1, (int) position.y, i),
+					image.getSampleDouble((int) position.x, (int) position.y + 1, i),
+					image.getSampleDouble((int) position.x + 1, (int) position.y + 1, i));
+		}
+
+
+		return rgba;
 	}
 }

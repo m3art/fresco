@@ -6,8 +6,11 @@ package workers.registration.refpointga;
 
 import fresco.swing.CWorkerDialogFactory;
 import image.CBinaryImage;
+import image.converters.Crgb2grey;
+import image.statiscics.CHistogram;
 import info.clearthought.layout.TableLayout;
 import java.awt.image.BufferedImage;
+import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.util.LinkedList;
 import java.util.concurrent.ExecutionException;
@@ -58,6 +61,8 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 	static final double RTS_SIZE = 0.9;
 	/** Correlation of point pairs. Radius define range of counted correlation around center pixel */
 	static final int RADIUS_DEFAULT = 25;
+	/** Percentage of edge pixels in image (top boundary) */
+	static final int EDGE_PIXELS_PERCENT = 4;
 	/** size of population of marks for genetic algorithm */
 	private final int populationSize;
 	/** Set of points and their rigid transformation params */
@@ -96,15 +101,17 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 	@Override
 	protected CPointPairs doInBackground() throws Exception {
 		// create referring picture map (Canny detector and thresholding)
+		long start = System.currentTimeMillis();
 		CBinaryImage bw = createBinaryImage();
-		logger.fine("Binary image created");
+		logger.log(Level.FINE, "Binary image created: {0}ms", (System.currentTimeMillis()-start));
 		// compute nearest edge matrix
+		start = System.currentTimeMillis();
 		nem = new CNearestEdgeMatrix(bw);
-		logger.fine("Nearest edge matrix done");
+		logger.log(Level.FINE, "Nearest edge matrix done: {0}ms", (System.currentTimeMillis()-start));
 		// initialize points
 		createPopulation();
-		logger.fine("Population created");
-		dump(population);
+		logger.log(Level.FINE, "Population created: {0}ms", (System.currentTimeMillis()-start));
+		//dump(population);
 
 		// initialize evolution
 		CPointEvolution evolution = new CPointEvolution(generations, population, nem);
@@ -154,9 +161,24 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 
 		WritableRaster cannyResult = ced.get().getRaster();
 
-
-		return new CBinaryImage(cannyResult, 180);
+		return new CBinaryImage(cannyResult, countThreshold(cannyResult, EDGE_PIXELS_PERCENT));
 	}
+
+	private int countThreshold(Raster raster, int percentOfEdgePixels) {
+		double[][] greyImage = Crgb2grey.convertImage(raster);
+		int[] greyHist = CHistogram.getMonochromeHistogram(greyImage, 256);
+		int sum = 0;
+		int size = greyImage.length * greyImage[0].length;
+
+		for(int i=greyHist.length - 1; i>=0; i--) {
+			sum += greyHist[i];
+			if (sum > size * percentOfEdgePixels / 100)
+				return i;
+		}
+
+		return 0;
+	}
+
 
 	/** Defines initial position of each point in population. This version uses
 	 * square mesh with Gaussian noise. Transformation parameters are generated
@@ -177,7 +199,7 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 
 		for (int i = 0; i < population.length; i++) {
 			if (!pairs.contains(population[i].getPosition(), null)) {
-				pairs.addPointPair(population[i].getPosition(), population[i].getIntProjection());
+				pairs.addPointPair(population[i].getPosition(), population[i].getProjection());
 			}
 		}
 
@@ -254,9 +276,9 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 		}
 
 		try {
-			fitnessThreshold = Integer.valueOf(fitnessThresholdInput.getText());
+			fitnessThreshold = Double.valueOf(fitnessThresholdInput.getText());
 		} catch (NumberFormatException nfe) {
-			logger.log(Level.WARNING, "Value for fitness threshold is not a integer number! Using default value: {0}", FITNESS_THRESHOLD_DEFAULT);
+			logger.log(Level.WARNING, "Value for fitness threshold is not a real number! Using default value: {0}", FITNESS_THRESHOLD_DEFAULT);
 		}
 
 		return true;

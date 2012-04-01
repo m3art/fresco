@@ -4,7 +4,6 @@
  */
 package utils.geometry;
 
-import java.awt.Point;
 import java.awt.geom.Point2D;
 
 /**
@@ -66,7 +65,7 @@ public class CPerspectiveTransformation implements ITransformation2D {
 	/**
 	 * Defines transformation from 4 pair of corresponding points
 	 */
-	public void setParameters(Point x1, Point t1, Point x2, Point t2, Point x3, Point t3, Point x4, Point t4) {
+	public void setParameters(Point2D.Double x1, Point2D.Double t1, Point2D.Double x2, Point2D.Double t2, Point2D.Double x3, Point2D.Double t3, Point2D.Double x4, Point2D.Double t4) {
 		set(new Point2D.Double(x1.x, x1.y), new Point2D.Double(t1.x, t1.y),
 				new Point2D.Double(x2.x, x2.y), new Point2D.Double(t2.x, t2.y),
 				new Point2D.Double(x3.x, x3.y), new Point2D.Double(t3.x, t3.y),

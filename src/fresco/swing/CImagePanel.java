@@ -15,6 +15,7 @@ import workers.segmentation.CSegment;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseListener;
+import java.awt.geom.Point2D;
 import java.util.*;
 import java.util.logging.Logger;
 import workers.segmentation.CSegmentMap;
@@ -96,13 +97,13 @@ public class CImagePanel extends CDrawPanel implements Scrollable, MouseListener
 		Iterator iter = container.getMarks().iterator();
 		Color[] markFg = {Color.BLACK, Color.BLUE, Color.GREEN, Color.RED, Color.YELLOW},
 				markBg = {Color.WHITE, Color.YELLOW, Color.PINK, Color.BLACK, Color.BLUE};
-		Point mark;
+		Point2D.Double mark;
 		int i = 0;
 
 		while (iter.hasNext()) {
-			mark = (Point) iter.next();
-			x = (int) (mark.x * CData.getFocus() / 100);
-			y = (int) (mark.y * CData.getFocus() / 100);
+			mark = (Point2D.Double) iter.next();
+			x = (int) Math.round(mark.x * CData.getFocus() / 100);
+			y = (int) Math.round(mark.y * CData.getFocus() / 100);
 
 			g.setColor(markBg[i % markBg.length]);
 			g.drawLine(x - CROSS_SIZE - 1, y - CROSS_SIZE - 1, x + CROSS_SIZE + 1, y - CROSS_SIZE - 1);

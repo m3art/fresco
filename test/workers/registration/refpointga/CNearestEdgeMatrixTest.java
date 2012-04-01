@@ -4,6 +4,7 @@
  */
 package workers.registration.refpointga;
 
+import java.awt.geom.Point2D;
 import image.CBinaryImage;
 import java.awt.Point;
 import org.junit.BeforeClass;
@@ -42,44 +43,44 @@ public class CNearestEdgeMatrixTest {
 	@Test
 	public void testGetNearest_Point() {
 		System.out.println("getNearest");
-		Point p = new Point(0, 0);
-		Point expResult = new Point(3, 0);
-		Point result = nem.getNearest(p);
+		Point2D.Double p = new Point2D.Double(0, 0);
+		Point2D.Double expResult = new Point2D.Double(3, 0);
+		Point2D.Double result = nem.getNearest(p);
 		assertEquals(expResult, result);
 
 		p.x = 9;
 		p.y = 9;
-		expResult = new Point(7, 5);
+		expResult = new Point2D.Double(7, 5);
 		result = nem.getNearest(p);
 		assertEquals(expResult, result);
 
 		p.x = 4;
 		p.y = 7;
-		expResult = new Point(5, 5);
+		expResult = new Point2D.Double(5, 5);
 		result = nem.getNearest(p);
 		assertEquals(expResult, result);
 
 		p.x = 2;
 		p.y = 4;
-		expResult = new Point(4, 4);
+		expResult = new Point2D.Double(4, 4);
 		result = nem.getNearest(p);
 		assertEquals(expResult, result);
 
 		p.x = 7;
 		p.y = 3;
-		expResult = new Point(7, 4);
+		expResult = new Point2D.Double(7, 4);
 		result = nem.getNearest(p);
 		assertEquals(expResult, result);
 
 		p.x = 7;
 		p.y = 0;
-		expResult = new Point(8, 3);
+		expResult = new Point2D.Double(8, 3);
 		result = nem.getNearest(p);
 		assertEquals(expResult, result);
 
 		p.x = 3;
 		p.y = 1;
-		expResult = new Point(3, 1);
+		expResult = new Point2D.Double(3, 1);
 		result = nem.getNearest(p);
 		assertEquals(expResult, result);
 	}
@@ -92,43 +93,43 @@ public class CNearestEdgeMatrixTest {
 		System.out.println("getNearest");
 		int x = 0;
 		int y = 0;
-		Point expResult = new Point(3, 0);
-		Point result = nem.getNearest(x, y);
+		Point2D.Double expResult = new Point2D.Double(3, 0);
+		Point2D.Double result = nem.getNearest(x, y);
 		assertEquals(expResult, result);
 
 		x = 2;
 		y = 9;
-		expResult = new Point(5, 5);
+		expResult = new Point2D.Double(5, 5);
 		result = nem.getNearest(2, 9);
 		assertEquals(expResult, result);
 
 		x = 7;
 		y = 7;
-		expResult = new Point(7, 5);
+		expResult = new Point2D.Double(7, 5);
 		result = nem.getNearest(x, y);
 		assertEquals(expResult, result);
 
 		x = 5;
 		y = 3;
-		expResult = new Point(4, 3);
+		expResult = new Point2D.Double(4, 3);
 		result = nem.getNearest(x, y);
 		assertEquals(expResult, result);
 
 		x = 8;
 		y = 1;
-		expResult = new Point(8, 3);
+		expResult = new Point2D.Double(8, 3);
 		result = nem.getNearest(x, y);
 		assertEquals(expResult, result);
 
 		x = 1;
 		y = 0;
-		expResult = new Point(3, 0);
+		expResult = new Point2D.Double(3, 0);
 		result = nem.getNearest(x, y);
 		assertEquals(expResult, result);
 
 		x = 5;
 		y = 4;
-		expResult = new Point(4, 4);
+		expResult = new Point2D.Double(4, 4);
 		result = nem.getNearest(x, y);
 		assertEquals(expResult, result);
 	}

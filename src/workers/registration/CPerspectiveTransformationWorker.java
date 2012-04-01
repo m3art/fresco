@@ -24,7 +24,7 @@ import utils.geometry.CPerspectiveTransformation;
  */
 public class CPerspectiveTransformationWorker extends CRegistrationWorker {
 
-	LinkedList<Point> patternMarks, transformMarks;
+	LinkedList<Point2D.Double> patternMarks, transformMarks;
 	BufferedImage original;
 	Point size;
 
@@ -51,7 +51,7 @@ public class CPerspectiveTransformationWorker extends CRegistrationWorker {
 		Point2D.Double ref;
 
 		if (patternMarks.size() > 3 && transformMarks.size() > 3) {
-			Point[] marks = new Point[4], refs = new Point[4];
+			Point2D.Double[] marks = new Point2D.Double[4], refs = new Point2D.Double[4];
 
 			for (int i = 0; i < 4; i++) {
 				marks[i] = transformMarks.remove();

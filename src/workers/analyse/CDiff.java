@@ -6,7 +6,7 @@
 package workers.analyse;
 
 import image.converters.CNormalization;
-import image.converters.Crgb2gray;
+import image.converters.Crgb2grey;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
@@ -50,8 +50,8 @@ public class CDiff extends CAnalysisWorker {
 			return null;
 		}
 
-        in1 = CNormalization.normalize((new Crgb2gray()).convert(imageA), 128, 64).getData();
-        in2 = CNormalization.normalize((new Crgb2gray()).convert(imageB), 128, 64).getData();
+        in1 = CNormalization.normalize((new Crgb2grey()).convert(imageA), 128, 64).getData();
+        in2 = CNormalization.normalize((new Crgb2grey()).convert(imageB), 128, 64).getData();
 		for(x=0;x<in1.getWidth(); x++)
 			for(y=0;y<in1.getHeight(); y++) {
 				in1.getPixel(x, y, pixA);

@@ -5,7 +5,7 @@
 package workers.analyse;
 
 import fresco.CImageContainer;
-import image.converters.Crgb2gray;
+import image.converters.Crgb2grey;
 import image.converters.IConstants;
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
@@ -200,7 +200,7 @@ public class CPatternAnalyzer extends CAnalysisWorker {
 		for (int x = 0; x < input.getWidth(); x++) {
 			for (int y = 0; y < input.getHeight(); y++) {
 				raster.getPixel(x, y, rgb);
-				gray = Crgb2gray.convert(rgb);
+				gray = Crgb2grey.convert(rgb);
 
 				out[x][y] = ((double) (gray[0])) / ((double) GRAY_LEVELS * MAX + MIN);
 			}

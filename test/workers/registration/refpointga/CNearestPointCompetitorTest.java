@@ -4,6 +4,7 @@
  */
 package workers.registration.refpointga;
 
+import java.awt.geom.Point2D;
 import java.awt.Point;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -55,7 +56,7 @@ public class CNearestPointCompetitorTest {
 		population[3].setValues(3, 3, 0, 0, 0, 0);
 		population[4].setValues(4, 4, 0, 0, 0, 0);
 
-		child.setPosition(new Point(4, 3));
+		child.setPosition(new Point2D.Double(4, 3));
 
 		CNearestPointCompetitor instance = new CNearestPointCompetitor();
 		CPointAndTransformation expResult = population[3];

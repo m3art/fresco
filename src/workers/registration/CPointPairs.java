@@ -4,7 +4,7 @@
  */
 package workers.registration;
 
-import java.awt.Point;
+import java.awt.geom.Point2D;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -14,18 +14,18 @@ import java.util.LinkedList;
  */
 public class CPointPairs {
 
-	LinkedList<Point> origins = new LinkedList<Point>();
-	LinkedList<Point> projected = new LinkedList<Point>();
+	LinkedList<Point2D.Double> origins = new LinkedList<Point2D.Double>();
+	LinkedList<Point2D.Double> projected = new LinkedList<Point2D.Double>();
 
-	public LinkedList<Point> getOrigins() {
+	public LinkedList<Point2D.Double> getOrigins() {
 		return origins;
 	}
 
-	public LinkedList<Point> getProjected() {
+	public LinkedList<Point2D.Double> getProjected() {
 		return projected;
 	}
 
-	public void addPointPair(Point origin, Point projection) {
+	public void addPointPair(Point2D.Double origin, Point2D.Double projection) {
 		origins.add(origin);
 		projected.add(projection);
 	}
@@ -39,12 +39,12 @@ public class CPointPairs {
 	 * @param projected optional corresponding point
 	 * @return true if origin/pair is in point set
 	 */
-	public boolean contains(Point origin, Point projected) {
-		Iterator<Point> itProj = this.projected.iterator();
-		Iterator<Point> itOrig = origins.iterator();
+	public boolean contains(Point2D.Double origin, Point2D.Double projected) {
+		Iterator<Point2D.Double> itProj = this.projected.iterator();
+		Iterator<Point2D.Double> itOrig = origins.iterator();
 		while (itOrig.hasNext()) {
-			Point orig = itOrig.next();
-			Point proj = itProj.next();
+			Point2D.Double orig = itOrig.next();
+			Point2D.Double proj = itProj.next();
 
 			if (orig.x == origin.x && orig.y == origin.y && projected == null) {
 				return true;

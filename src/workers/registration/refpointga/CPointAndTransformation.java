@@ -14,15 +14,15 @@ import utils.geometry.CAffineTransformation;
  * @author gimli
  * @version Oct 16, 2011
  */
-public class CPointAndTransformation extends CGenotype {
+public class CPointAndTransformation extends utils.geometry.CPointAndTransformation implements CGenotype {
 
-	/** Position of individual in image */
-	private Point position;
-	/** Transformation parameters, translation, angle and scale */
-	private double dx, dy, angle, scale;
 	/** Fitness counter */
 	private final IFitnessOperator<CPointAndTransformation> fitnessEvaluator;
+	/** measure of quality of correspondence */
 	private double fitness;
+	/** counting of fitness can be expensive, therefore is counted only if necessary
+	 * This variable means if {#fitness} is valid number
+	 */
 	private boolean validFitness = false;
 
 	public CPointAndTransformation(IFitnessOperator<CPointAndTransformation> fitnessEvaluator) {
@@ -42,8 +42,8 @@ public class CPointAndTransformation extends CGenotype {
 		}
 	}
 
-	public void setValues(int x, int y, double dx, double dy, double angle, double scale) {
-		position = new Point(x, y);
+	public void setValues(double x, double y, double dx, double dy, double angle, double scale) {
+		position = new Point2D.Double(x, y);
 		this.dx = dx;
 		this.dy = dy;
 		this.angle = angle;
@@ -54,10 +54,6 @@ public class CPointAndTransformation extends CGenotype {
 	public void alignToEdge(CNearestEdgeMatrix m) {
 		position = m.getNearest(position);
 		validFitness = false;
-	}
-
-	public Point getPosition() {
-		return position;
 	}
 
 	@Override
@@ -77,42 +73,11 @@ public class CPointAndTransformation extends CGenotype {
 		return CAffineTransformation.getProjected(position.x, position.y, dx, dy, angle, scale, scale);
 	}
 
-	/**
-	 * Projection of this center point applied on another pixel
-	 * @param x coordinate of projected pixel
-	 * @param y coordinate of projected pixel
-	 * @return projected point
-	 */
-	Point2D.Double getProjection(double x, double y) {
-		return CAffineTransformation.getProjected(x, y, dx, dy, angle, scale, scale);
-	}
-
-	public Point getIntProjection() {
-		Point2D.Double projection = getProjection(position.x, position.y);
-		return new Point((int) Math.round(projection.x), (int) Math.round(projection.y));
-	}
-
 	IFitnessOperator<CPointAndTransformation> getFitnessEvaluator() {
 		return fitnessEvaluator;
 	}
 
-	double getShiftX() {
-		return dx;
-	}
-
-	double getShiftY() {
-		return dy;
-	}
-
-	double getAngle() {
-		return angle;
-	}
-
-	double getScale() {
-		return scale;
-	}
-
-	void setPosition(Point nearestEdgePixel) {
+	void setPosition(Point2D.Double nearestEdgePixel) {
 		position = nearestEdgePixel;
 		validFitness = false;
 	}

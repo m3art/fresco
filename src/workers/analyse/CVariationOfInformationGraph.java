@@ -4,7 +4,7 @@
  */
 package workers.analyse;
 
-import image.converters.Crgb2gray;
+import image.converters.Crgb2grey;
 import image.converters.Crgb2hsv;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
@@ -30,8 +30,8 @@ public class CVariationOfInformationGraph extends CAnalysisWorker {
 	private static final Logger logger = Logger.getLogger(CVariationOfInformationGraph.class.getName());
 
 	public CVariationOfInformationGraph(BufferedImage imageA, BufferedImage imageB) {
-		this.imageA = /*imageA; /*/ (new Crgb2gray()).convert(imageA);
-		this.imageB = /*imageB; /*/ (new Crgb2gray()).convert(imageB);
+		this.imageA = /*imageA; /*/ (new Crgb2grey()).convert(imageA);
+		this.imageB = /*imageB; /*/ (new Crgb2grey()).convert(imageB);
 	}
 
 	/**
