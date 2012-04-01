@@ -22,6 +22,7 @@ import java.util.logging.Logger;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import support.regmarks.CPointPairsOverview;
 import workers.CImageWorker;
 import workers.registration.CPointPairs;
 import workers.registration.refpointga.CRefPointMarker;
@@ -287,6 +288,8 @@ public class CActionManager {
 						CData.getImage(CData.showImage[2]).setMarks(pairs.getProjected());
 
 						return;
+					} else if (imageWorker instanceof CPointPairsOverview) {
+						((CPointPairsOverview)imageWorker).get().setVisible(true);
 					} else {
 						CData.output = new CImageContainer((BufferedImage) imageWorker.get(), true);
 					}

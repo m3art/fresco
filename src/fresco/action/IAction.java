@@ -60,7 +60,8 @@ public interface IAction {
 		//tools
 		registerMarks,
 		// support
-		registrationMarkSearch
+		registrationMarkSearch,
+		registrationMarksQuality
 	};
 
 	public RegID getID();

@@ -39,7 +39,7 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 	// segmentation
 	CMenuItem colorQuantization;
 	// support
-	CMenuItem registrationMarkSelector;
+	CMenuItem registrationMarkSelector, regQuality;
 
 	/**
 	 * Constructor contains all necessary:
@@ -254,11 +254,16 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 			mutualInfo.setEnabled(true);
 			patternAnalysis.setEnabled(true);
 			registrationMarkSelector.setEnabled(true);
+			if (CData.getImage(CData.showImage[0]).getNumOfMarks() == CData.getImage(CData.showImage[2]).getNumOfMarks())
+				regQuality.setEnabled(true);
+			else
+				regQuality.setEnabled(false);
 		} else {
 			diff.setEnabled(false);
 			mutualInfo.setEnabled(false);
 			patternAnalysis.setEnabled(false);
 			registrationMarkSelector.setEnabled(false);
+			regQuality.setEnabled(false);
 		}
 
 		if (show2ndInput.isSelected()) {
@@ -319,5 +324,9 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 		registrationMarkSelector = new CMenuItem("Corresponding points selection", RegID.registrationMarkSearch);
 		registrationMarkSelector.addActionListener(CData.userActionListener);
 		supportMenu.add(registrationMarkSelector);
+
+		regQuality = new CMenuItem("Registration marks overview", RegID.registrationMarksQuality);
+		regQuality.addActionListener(CData.userActionListener);
+		supportMenu.add(regQuality);
 	}
 }

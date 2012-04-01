@@ -17,6 +17,7 @@ public abstract class CSupportWorker<T, V> extends CImageWorker<T, V> {
 		return "Support function";
 	}
 
+	@Override
 	public CImageWorker.Type getType() {
 		return CImageWorker.Type.SUPPORT;
 	}

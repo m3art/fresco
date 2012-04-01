@@ -17,12 +17,30 @@ public class CPointPairs {
 	LinkedList<Point2D.Double> origins = new LinkedList<Point2D.Double>();
 	LinkedList<Point2D.Double> projected = new LinkedList<Point2D.Double>();
 
+	public CPointPairs() {
+		
+	}
+
+	public CPointPairs(LinkedList<Point2D.Double> origins, LinkedList<Point2D.Double> projections) {
+		assert (origins.size() == projections.size());
+		this.origins = origins;
+		this.projected = projections;
+	}
+
 	public LinkedList<Point2D.Double> getOrigins() {
 		return origins;
 	}
 
 	public LinkedList<Point2D.Double> getProjected() {
 		return projected;
+	}
+
+	public Point2D.Double getOrigin(int i) {
+		return origins.get(i);
+	}
+
+	public Point2D.Double getProjected(int i) {
+		return projected.get(i);
 	}
 
 	public void addPointPair(Point2D.Double origin, Point2D.Double projection) {
@@ -53,5 +71,9 @@ public class CPointPairs {
 			}
 		}
 		return false;
+	}
+
+	public int size() {
+		return origins.size();
 	}
 }

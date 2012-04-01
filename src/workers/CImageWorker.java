@@ -10,6 +10,7 @@ import java.awt.image.BufferedImage;
 import java.util.logging.Logger;
 import javax.swing.JDialog;
 import javax.swing.SwingWorker;
+import support.regmarks.CPointPairsOverview;
 import workers.analyse.CCannyEdgeDetector;
 import workers.analyse.CDiff;
 import workers.analyse.CLaplacian;
@@ -18,6 +19,7 @@ import workers.analyse.CPatternAnalyzer;
 import workers.correction.CAdaptiveHistogramEnhancing;
 import workers.correction.CColorShiftWorker;
 import workers.registration.CPerspectiveTransformationWorker;
+import workers.registration.CPointPairs;
 import workers.registration.refpointga.CRefPointMarker;
 import workers.segmentation.CColorQuantizer;
 import workers.tools.CRotation;
@@ -71,7 +73,6 @@ public abstract class CImageWorker<T, V> extends SwingWorker<T, V> implements II
 				return new CVariationOfInformationGraph(CData.getImage(CData.showImage[0]).getImage(),
 						CData.getImage(CData.showImage[2]).getImage());
 			case colorQuantization:
-				BufferedImage image = CData.getImage(CData.showImage[0]).getImage();
 				return new CColorQuantizer(CData.getImage(CData.showImage[0]).getImage());
 			case register:
 				return new CPerspectiveTransformationWorker(CData.getImage(CData.showImage[0]), CData.getImage(CData.showImage[2]));
@@ -84,6 +85,9 @@ public abstract class CImageWorker<T, V> extends SwingWorker<T, V> implements II
 			case registrationMarkSearch:
 				// FIXME: population size can be set by user
 				return new CRefPointMarker(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), 150);
+			case registrationMarksQuality:
+				CPointPairs pairs = new CPointPairs(CData.getImage(CData.showImage[0]).getMarks(), CData.getImage(CData.showImage[2]).getMarks());
+				return new CPointPairsOverview(pairs, CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage());
 			default:
 				return null;
 		}

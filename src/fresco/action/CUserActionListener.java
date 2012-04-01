@@ -152,6 +152,7 @@ public class CUserActionListener implements ActionListener, ItemListener {
 				case colorQuantization:
 				case laplace:
 				case registrationMarkSearch:
+				case registrationMarksQuality:
 					manager.runImageWorker(id, null);
 					break;
 			}
