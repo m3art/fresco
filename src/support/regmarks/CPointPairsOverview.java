@@ -53,7 +53,7 @@ public class CPointPairsOverview extends CSupportWorker<JDialog, Void> {
 
 		for(int i=0; i< pairs.size(); i++) {
 			int j = 0;
-			rows[i][j++] = i;
+			rows[i][j++] = i+1;
 			for(int k=0; k< metrics.size(); k++) {
 				rows[i][j++] = values[i][k];
 			}
@@ -98,11 +98,11 @@ public class CPointPairsOverview extends CSupportWorker<JDialog, Void> {
 		@Override
 		public int compare(Object[] o1, Object[] o2) {
 			if ((Double)o1[field] > (Double)o2[field])
-				return 1;
+				return -1;
 			else if ((Double)o1[field] == (Double)o2[field])
 				return 0;
 			else
-				return -1;
+				return 1;
 		}
 
 	}
