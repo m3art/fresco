@@ -133,10 +133,10 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 			setProgress(100 / 6 + 500 * evolution.getGenerations() / generations / 6);
 		}
 
-		if (bestOf.size() < populationSize && bestOf.size() > 4) {
-			population = new CPointAndTransformation[bestOf.size()];
-			population = bestOf.toArray(population);
-		}
+//		if (bestOf.size() < populationSize && bestOf.size() > 4) {
+//			population = new CPointAndTransformation[bestOf.size()];
+//			population = bestOf.toArray(population);
+//		}
 
 		return removeDuplicites();
 	}
@@ -197,11 +197,16 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 	private CPointPairs removeDuplicites() {
 		CPointPairs pairs = new CPointPairs();
 
+		int duplicites = 0;
 		for (int i = 0; i < population.length; i++) {
 			if (!pairs.contains(population[i].getPosition(), null)) {
 				pairs.addPointPair(population[i].getPosition(), population[i].getProjection());
+			} else {
+				duplicites++;
 			}
 		}
+
+		logger.log(Level.INFO, "Removed {0} of duplicite points", duplicites);
 
 		return pairs;
 	}
@@ -215,7 +220,7 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 			sb.append(data[i].getPosition().y);
 			sb.append(']');
 		}
-		logger.info(sb.toString());
+		logger.finest(sb.toString());
 		logger.log(Level.INFO, "Best of size: {0} Best fit: {1}. Average: {2}", new Object[]{bestOf.size(), bestFit, averageFitness});
 	}
 
@@ -226,6 +231,7 @@ public class CRefPointMarker extends CSupportWorker<CPointPairs, CPointAndTransf
 			if (population[i].getFitness() > fitnessThreshold && !bestOf.contains(population[i])) {
 
 				bestOf.add(population[i]);
+				logger.log(Level.FINE, "Adding point: {0} with fitness: {1}", new Object[]{population[i].getPosition(), population[i].getFitness()});
 			}
 			bestFit = Math.max(population[i].getFitness(), bestFit);
 			averageFitness += population[i].getFitness();

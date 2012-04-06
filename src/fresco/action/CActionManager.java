@@ -290,6 +290,7 @@ public class CActionManager {
 						return;
 					} else if (imageWorker instanceof CPointPairsOverview) {
 						((CPointPairsOverview)imageWorker).get().setVisible(true);
+						return;
 					} else {
 						CData.output = new CImageContainer((BufferedImage) imageWorker.get(), true);
 					}
@@ -300,7 +301,7 @@ public class CActionManager {
 			loadOutput();
 			refreshGUI();
 		} catch (NullPointerException npe) {
-			logger.info("NullPointerException: Bad input params for worker or worker bug.");
+			logger.log(Level.INFO, "NullPointerException: Bad input params for worker or worker bug.{0}", npe.getMessage());
 		} catch (CancellationException ce) {
 			logger.info("Operation cancelled");
 		} catch (InterruptedException ie) {
