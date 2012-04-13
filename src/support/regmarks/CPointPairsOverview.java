@@ -163,6 +163,9 @@ public class CPointPairsOverview extends CSupportWorker<JDialog, Void> {
 		dialog.setVisible(false);
 	}
 
+	/**
+	 * Compare two table rows by one of column
+	 */
 	private class CRowComparator implements Comparator<Double[]> {
 
 		int field = 0;

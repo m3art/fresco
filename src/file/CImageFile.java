@@ -22,6 +22,7 @@ import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import javax.media.jai.JAI;
@@ -67,8 +68,9 @@ public class CImageFile {
 	/**
 	 * This method do Save As ...
 	 * @param image data to store
+	 * @return new name of image
 	 */
-	public static void saveAsPicture(CImageContainer image) {
+	public static String saveAsPicture(CImageContainer image) {
 		JFileChooser fc;
 		String extension;
 
@@ -111,10 +113,11 @@ public class CImageFile {
 				//JAI.create("filestore", image.getImage(), path.toString()+"."+extension, extension);
 			}
 
-			logger.info(fc.getSelectedFile() + " has been saved.");
-			return;
+			logger.log(Level.INFO, "{0} has been saved.", fc.getSelectedFile());
+			return userString;
 		}
 		logger.info("Image saving have been cancelled.");
+		return null;
 	}
 
 	/**

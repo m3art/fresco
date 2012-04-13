@@ -131,7 +131,11 @@ public class CActionManager {
 	}
 
 	public void saveAsPicture(int id) {
-		CImageFile.saveAsPicture(CData.getImage(id));
+		String imageNewName = CImageFile.saveAsPicture(CData.getImage(id));
+		if (imageNewName != null) {
+			CData.getImage(id).setFilename(imageNewName);
+			previewBar.refreshBar();
+		}
 	}
 
 	public void savePicture(int id) {
