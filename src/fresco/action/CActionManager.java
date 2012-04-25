@@ -26,6 +26,7 @@ import support.regmarks.CPointPairsOverview;
 import workers.CImageWorker;
 import workers.registration.CPointPairs;
 import workers.registration.refpointga.CRefPointMarker;
+import workers.registration.CInterestingPoints;
 import workers.segmentation.CSegmentMap;
 
 /**
@@ -251,6 +252,7 @@ public class CActionManager {
 		}
 
 		imageWorker.addPropertyChangeListener(progressBar);
+    JOptionPane.showMessageDialog(new JFrame(), imageWorker.getTypeName(), "That's running", JOptionPane.WARNING_MESSAGE);
 		imageWorker.execute();
 	}
 
@@ -263,7 +265,7 @@ public class CActionManager {
 			logger.log(Level.INFO, "{0}, {1}", new Object[]{imageWorker.getTypeName(), imageWorker.getWorkerName()});
 			switch (imageWorker.getType()) {
 				case ANALYSIS:
-					CData.output = new CImageContainer((BufferedImage) imageWorker.get(), true);
+         	CData.output = new CImageContainer((BufferedImage) imageWorker.get(), true);
 					break;
 				case SEGMENTATION:
 					CData.output = new CImageContainer(CData.getImage(CData.showImage[0]).getImage(), false);

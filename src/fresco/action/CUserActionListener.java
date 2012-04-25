@@ -116,7 +116,8 @@ public class CUserActionListener implements ActionListener, ItemListener {
 					break;
 				case imageSave:
 					logger.info("Image save executed");
-					manager.saveAsPicture(CData.showImage[0]);
+					
+          manager.saveAsPicture(CData.showImage[0]);
 					break;
 				case imageInfo:
 					logger.info("Image info executed");
@@ -153,6 +154,7 @@ public class CUserActionListener implements ActionListener, ItemListener {
 				case laplace:
 				case registrationMarkSearch:
 				case registrationMarksQuality:
+        case intPoints:
 					manager.runImageWorker(id, null);
 					break;
 			}

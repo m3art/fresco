@@ -46,6 +46,7 @@ public interface IAction {
 		diff,
 		mutualInfo,
 		patternAnalyzer,
+    intPoints,
 		// correction
 		ahe,
 		colorShift,

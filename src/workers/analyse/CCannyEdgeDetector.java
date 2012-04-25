@@ -9,10 +9,7 @@ import info.clearthought.layout.TableLayout;
 import workers.segmentation.*;
 import java.awt.image.*;
 import java.awt.*;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JSlider;
+import javax.swing.*;
 
 /**
  * Colour implementation of canny edge detector.
@@ -59,15 +56,15 @@ public class CCannyEdgeDetector extends CAnalysisWorker {
 	 * @param lowThreshold edge threshold
 	 * @param highThreshold edge threshold
 	 */
-	public CCannyEdgeDetector(BufferedImage original, int lowThreshold, int highThreshold) {
+	public CCannyEdgeDetector(BufferedImage original, double lowThreshold, double highThreshold) {
 		this(original);
 		this.lowThreshold = lowThreshold;
 		this.highThreshold = highThreshold;
-	}
+  }
 
 	@Override
 	protected BufferedImage doInBackground() {
-		int x, y, b;
+    int x, y, b;
 		int[] A = null;
 		int[] sum = new int[bands], sum_x = new int[bands], sum_y = new int[bands];
 		WritableRaster raster = image.getRaster();

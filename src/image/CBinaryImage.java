@@ -5,7 +5,7 @@
 package image;
 
 import image.converters.Crgb2grey;
-import it.tidalwave.imageio.util.Logger;
+import java.util.logging.Logger;
 import java.awt.image.Raster;
 
 /**

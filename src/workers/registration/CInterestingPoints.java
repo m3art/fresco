@@ -38,6 +38,7 @@ import javax.swing.*;
 public class CInterestingPoints extends CRegistrationWorker {
   private static final Logger logger = Logger.getLogger(CImageWorker.class.getName());
   private BufferedImage imageA;
+  public static int treshhold = 150;
 
   @Override
   public String getWorkerName() {
@@ -79,67 +80,86 @@ public class CInterestingPoints extends CRegistrationWorker {
     white[0] = 255;
     white[1] = 255;
     white[2] = 255;
+    
+    /*
     for (int x = 0; x < in1.getWidth(); x++) {
       for (int y = 0; y < in1.getHeight(); y++) {
         in1.getPixel(x, y, pixA);
-        /*if (pixA[0] < 200){
+        if (pixA[0] < 200){
           tmp.setPixel(x, y, black);
         }
-        else tmp.setPixel(x, y, white);*/
+        else tmp.setPixel(x, y, white);
         tmp.setPixel(x, y, pixA);
         
       }
-    }     
+    } */    
     //JOptionPane.showMessageDialog(new JFrame(), "Got through thresholding edges\n", "Interesting points stopped", JOptionPane.WARNING_MESSAGE); 
     //output.setData(tmp);
     
-    WritableRaster out = imageA.getRaster();
+    WritableRaster out = output.getRaster();
     
     int [] current = null;
     int [] newpx = new int[3];
     double intensity = 0;
+    double [] retval = new double[5];
+    
+    CCornerDetectorCOG CC = new CCornerDetectorCOG(21);
     int shift = (int)(CCornerDetectorCOG.size/2);
-    CCornerDetectorCOG CC = new CCornerDetectorCOG(9);
+    
     for (int x = 0; x < in1.getWidth()-CCornerDetectorCOG.size; x++) {
       for (int y = 0; y < in1.getHeight()-CCornerDetectorCOG.size; y++) {
         current = in1.getSamples(x, y, CCornerDetectorCOG.size, CCornerDetectorCOG.size, 0, current);
-        //logger.info(x+"."+y);
-        //intensity = 128.1;
+        retval = CC.GetCOG(current, false);
+        intensity = retval[0];
+        newpx[0] = newpx[1] = newpx[2] = (int)(retval[0] * 256);
         
+        //newpx[0] = (int)(retval[2]*256); 
+        //newpx[1] = (int)(retval[3]*256); 
+        //newpx[2] = (int)(retval[4]*256); 
+        out.setPixel(x+shift, y+shift, newpx);
+        setProgress(100 * (x * ((int) in1.getHeight()) + y) / ((int) (in1.getWidth() * in1.getHeight())));
        
-        intensity = CC.GetCOG(current, false)*256;
-        
-        
-       
-        
-        //if (intensity > 20) intensity = CC.GetCOG(current, true)*256;
-        
-        if(intensity>255) {
-          JOptionPane.showMessageDialog(new JFrame(), "intensity: "+intensity + "\n", "Interesting points stopped", JOptionPane.WARNING_MESSAGE); 
-        }
-       if ((intensity > 15) && (x > 10) && (x < in1.getWidth()-10) && (y > 10) && (y < in1.getHeight()-10)) {
-        
-        out.setPixel(x+shift, y+shift, white);
-        
-        out.setPixel(x+shift+1, y+shift, black);
-        out.setPixel(x+shift+2, y+shift, black);
-        out.setPixel(x+shift-1, y+shift, black);
-        out.setPixel(x+shift-2, y+shift, black);
-        out.setPixel(x+shift, y+shift+1, black);
-        out.setPixel(x+shift, y+shift+2, black);
-        out.setPixel(x+shift, y+shift-1, black);
-        out.setPixel(x+shift, y+shift-2, black);
-        logger.info( (x+shift) +","+  (y+shift)  );
-       }
-       setProgress(100 * (x * ((int) in1.getHeight()) + y) / ((int) (in1.getWidth() * in1.getHeight())));
-       //else out.setPixel(x+shift, y+shift, black);
-        newpx[0] = (int)intensity; 
-        newpx[1] = (int)intensity; 
-        newpx[2] = (int)intensity; 
-        //out.setPixel(x+shift, y+shift, newpx);
+   
       }
     }
     
+    double maxIntensity = 0;
+    int [] px = new int[3];
+    for (int a = 0; a < in1.getWidth()-CCornerDetectorCOG.size; a++) {
+      for (int b = 0; b < in1.getHeight()-CCornerDetectorCOG.size; b++) {
+        out.getPixel(a+shift, b+shift, px);
+        if (px[0]> maxIntensity) maxIntensity = px[0];
+      }
+    }
+    double q = 256/maxIntensity;
+    //q= 1;
+    int newint = 0;
+    newpx[1] = 0;
+    newpx[2] = 0;
+    for (int a = 0; a < in1.getWidth()-CCornerDetectorCOG.size; a++) {
+      for (int b = 0; b < in1.getHeight()-CCornerDetectorCOG.size; b++) {
+        out.getPixel(a+shift, b+shift, px);
+        intensity = px[0];
+        newint = (int)(q*intensity)%256;
+        newpx[0] = newpx[1] = newpx[2] = newint ;
+        
+        if (newint > treshhold) {
+          imageA.getRaster().setPixel(a+shift, b+shift, white);
+          imageA.getRaster().setPixel(a+shift+1, b+shift, black);
+          imageA.getRaster().setPixel(a+shift+2, b+shift, black);
+          imageA.getRaster().setPixel(a+shift-1, b+shift, black);
+          imageA.getRaster().setPixel(a+shift-2, b+shift, black);
+          imageA.getRaster().setPixel(a+shift, b+shift+1, black);
+          imageA.getRaster().setPixel(a+shift, b+shift+2, black);
+          imageA.getRaster().setPixel(a+shift, b+shift-1, black);
+          imageA.getRaster().setPixel(a+shift, b+shift-2, black);
+        
+        }
+        //newpx[1] = newint; 
+        //newpx[2] = newint; 
+        out.setPixel(a+shift, b+shift, newpx);
+      }
+    }
    
     
     
@@ -147,7 +167,7 @@ public class CInterestingPoints extends CRegistrationWorker {
     
     
     //return output;
-    return CNormalization.normalize(output, 128, 64);
+    return output;
     
   }
 }

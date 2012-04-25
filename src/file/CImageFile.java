@@ -28,6 +28,8 @@ import javax.media.jai.JAI;
 import javax.media.jai.LookupTableJAI;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 
 /**
  *
@@ -74,7 +76,7 @@ public class CImageFile {
 
 		fc = new JFileChooser();
 		String[] supportedFormats = ImageCodec.getEncoderNames(image.getImage(), null);
-
+    
 		for (int i = 0; i < supportedFormats.length; i++) {
 			fc.addChoosableFileFilter(new CFileFilter(supportedFormats[i], ImageCodec.getCodec(supportedFormats[i]).getFormatName()));
 		}
