@@ -37,8 +37,9 @@ import javax.swing.*;
  */
 public class CInterestingPoints extends CRegistrationWorker {
   private static final Logger logger = Logger.getLogger(CImageWorker.class.getName());
-  private BufferedImage imageA;
   public static int treshhold = 150;
+  private BufferedImage imageA;
+  
 
   @Override
   public String getWorkerName() {
