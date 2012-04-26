@@ -111,10 +111,10 @@ PROPERTIES NAMING CONVENTIONS:
 	<target name="fresco-run" depends="fresco-jar"
 		description="(dist) compile and run Fresco with logging.properties">
 		<java jar="${dist.dir}/${fresco.filename}" fork="true">
-			<jvmarg value="-Xmx1500m" />
+			<jvmarg value="-Xmx1000m" />
 			<jvmarg value="-Dapple.laf.useScreenMenuBar=true" />
 			<jvmarg value="-Dcom.apple.mrj.application.apple.menu.about.name=Fresco" />
-			<jvmarg value="-Xdock:icon=src/icons/Zebra-128x128.png" />
+			<!-- <jvmarg value="-Xdock:icon=src/icons/Zebra-128x128.png" />-->
 			<sysproperty key="java.util.logging.config.file" value="${logconf.file}" />
 		</java>
 	</target>
