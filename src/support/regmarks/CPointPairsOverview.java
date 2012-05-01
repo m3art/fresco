@@ -27,6 +27,7 @@ import support.CSupportWorker;
 import utils.metrics.CAreaSimilarityMetric;
 import utils.metrics.CCovarianceMetric;
 import utils.metrics.CCrossCorrelationMetric;
+import utils.metrics.CMutualInformation;
 import workers.registration.CPointPairs;
 
 /**
@@ -35,6 +36,7 @@ import workers.registration.CPointPairs;
  */
 public class CPointPairsOverview extends CSupportWorker<JDialog, Void> {
 
+	public final static int AREA_SIZE = 80;
 	private final LinkedList<CAreaSimilarityMetric> metrics = new LinkedList<CAreaSimilarityMetric>();
 	private CPointPairs pairs;
 	private double[][] values;
@@ -45,9 +47,10 @@ public class CPointPairsOverview extends CSupportWorker<JDialog, Void> {
 
 	public CPointPairsOverview(CPointPairs pairs, BufferedImage imageA, BufferedImage imageB) {
 		this.pairs = pairs;
-		metrics.add(new CCrossCorrelationMetric(imageA, imageB, 80, CAreaSimilarityMetric.Shape.CIRCULAR));
-		metrics.add(new CCovarianceMetric(imageA, imageB, 80, CAreaSimilarityMetric.Shape.CIRCULAR));
-		columnNames = new String[]{"No.", "cross corelation", "covariance"};
+		metrics.add(new CCrossCorrelationMetric(imageA, imageB, AREA_SIZE, CAreaSimilarityMetric.Shape.CIRCULAR));
+		metrics.add(new CCovarianceMetric(imageA, imageB, AREA_SIZE, CAreaSimilarityMetric.Shape.CIRCULAR));
+		metrics.add(new CMutualInformation(imageA, imageB, AREA_SIZE, CAreaSimilarityMetric.Shape.CIRCULAR));
+		columnNames = new String[]{"No.", "cross corelation", "covariance", "mutual information"};
 
 		values = new double[pairs.size()][metrics.size()];
 	}

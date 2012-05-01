@@ -23,18 +23,18 @@ public class CMutualInformation extends CAreaSimilarityMetric {
 
 		long start = System.currentTimeMillis();
 		CHistogram histA = CHistogram.createHistogram(inputAValues, (int)radius);
-		logger.log(Level.FINER, "Histogram A created: {0}", (System.currentTimeMillis()-start));
+		logger.log(Level.FINER, "Histogram A created: {0}. Entropy: {1}", new Object[]{(System.currentTimeMillis()-start), histA.entropy});
 
 		start = System.currentTimeMillis();
 		CHistogram histB = CHistogram.createHistogram(inputBValues, (int)radius);
-		logger.log(Level.FINER, "Histogram B created: {0}", (System.currentTimeMillis()-start));
+		logger.log(Level.FINER, "Histogram B created: {0}. Entropy: {1}", new Object[]{(System.currentTimeMillis()-start), histB.entropy});
 
 		start = System.currentTimeMillis();
 		double[][] valuesAB = new double[2][];
 		valuesAB[0] = inputAValues;
 		valuesAB[1] = inputBValues;
 		CHistogramND histAB = CHistogramND.createHistogram(valuesAB, new int[]{(int)radius, (int)radius});
-		logger.log(Level.FINER, "Histogram AB created: {0}", (System.currentTimeMillis()-start));
+		logger.log(Level.FINER, "Histogram AB created: {0}. Entropy: {1}", new Object[]{(System.currentTimeMillis()-start), histAB.entropy});
 
 		return histA.entropy + histB.entropy - histAB.entropy;
 	}

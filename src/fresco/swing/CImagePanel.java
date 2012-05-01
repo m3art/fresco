@@ -18,6 +18,7 @@ import java.awt.event.MouseListener;
 import java.awt.geom.Point2D;
 import java.util.*;
 import java.util.logging.Logger;
+import support.regmarks.CPointPairsOverview;
 import workers.segmentation.CSegmentMap;
 
 public class CImagePanel extends CDrawPanel implements Scrollable, MouseListener {
@@ -113,6 +114,8 @@ public class CImagePanel extends CDrawPanel implements Scrollable, MouseListener
 			g.setColor(markFg[i % markBg.length]);
 			g.drawLine(x + CROSS_SIZE, y, x - CROSS_SIZE, y);
 			g.drawLine(x, y + CROSS_SIZE, x, y - CROSS_SIZE);
+			g.setColor(Color.red);
+			g.drawArc(x - CPointPairsOverview.AREA_SIZE/2, y - CPointPairsOverview.AREA_SIZE/2, CPointPairsOverview.AREA_SIZE, CPointPairsOverview.AREA_SIZE, 0, 360);
 			logger.log(Level.FINEST, "Mark was painted: {0}, {1}", new Object[]{x, y});
 			i++;
 

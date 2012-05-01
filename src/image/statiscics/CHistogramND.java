@@ -6,6 +6,7 @@ package image.statiscics;
  */
 public class CHistogramND {
 
+	private final static double EPSILON = 0.1;
 	/** Number of dimensions */
 	public int dimensions;
 	/** Number of histogram bins in each dimension*/
@@ -70,7 +71,7 @@ public class CHistogramND {
 					out.min[i] = value;
 				}
 				if (value > out.max[i]) {
-					out.max[i] = value;
+					out.max[i] = value + EPSILON;
 				}
 			}
 			out.binSize[i] = (out.max[i]-out.min[i])/bins[i];
@@ -86,8 +87,10 @@ public class CHistogramND {
 		}
 
 		for(int bin: out.binContent) {
-			double pBin = bin/out.values;
-			out.entropy -= pBin * Math.log(pBin) * bin;
+			double pBin = ((double)bin)/out.values;
+			if (pBin != 0) {
+				out.entropy -= pBin * Math.log(pBin) * bin;
+			}
 		}
 
 		return out;

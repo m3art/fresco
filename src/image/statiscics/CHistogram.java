@@ -16,6 +16,7 @@ import workers.segmentation.CSegmentMap;
  */
 public class CHistogram {
 
+	private final static double EPSILON = 0.1;
 	/** Number of histogram bins */
 	public int bins;
 	/** Real size of histogram bin */
@@ -46,7 +47,7 @@ public class CHistogram {
 				out.min = value;
 			}
 			if (value > out.max) {
-				out.max = value;
+				out.max = value + EPSILON;
 			}
 		}
 
@@ -58,8 +59,10 @@ public class CHistogram {
 		out.values = values.length;
 
 		for(int bin: out.binContent) {
-			double pBin = bin/out.values;
-			out.entropy -= pBin * Math.log(pBin) * bin;
+			double pBin = ((double)bin)/out.values;
+			if (pBin != 0) {
+				out.entropy -= pBin * Math.log(pBin) * bin;
+			}
 		}
 
 		return out;
