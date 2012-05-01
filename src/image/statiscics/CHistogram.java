@@ -16,6 +16,56 @@ import workers.segmentation.CSegmentMap;
  */
 public class CHistogram {
 
+	/** Number of histogram bins */
+	public int bins;
+	/** Real size of histogram bin */
+	public double binSize;
+	/** Minimal and maximal value stored in histogram*/
+	public double min, max;
+	/** histogram bin values */
+	public int[] binContent;
+	/** Number of values stored in histogram */
+	public int values;
+	/** Entropy of stored values */
+	public double entropy;
+
+	private CHistogram(int bins) {
+		this.bins = bins;
+		min = Double.MAX_VALUE;
+		max = Double.MIN_VALUE;
+		binContent = new int[bins];
+		values = 0;
+		entropy = 0;
+	}
+
+	public static CHistogram createHistogram(double[] values, int bins) {
+		CHistogram out = new CHistogram(bins);
+
+		for(double value: values) {
+			if (value < out.min) {
+				out.min = value;
+			}
+			if (value > out.max) {
+				out.max = value;
+			}
+		}
+
+		out.binSize = (out.max-out.min)/bins;
+
+		for(double value: values) {
+			out.binContent[(int)((value-out.min)/out.binSize)]++;
+		}
+		out.values = values.length;
+
+		for(int bin: out.binContent) {
+			double pBin = bin/out.values;
+			out.entropy -= pBin * Math.log(pBin) * bin;
+		}
+
+		return out;
+	}
+
+
 	public static int[] getMonochromeHistogram(double[][] imageValues, int range) {
 		int[] hist = new int[range];
 

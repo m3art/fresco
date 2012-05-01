@@ -25,7 +25,7 @@ public abstract class CAreaSimilarityMetric {
 		RECTANGULAR, CIRCULAR
 	};
 	private final Raster imageA, imageB;
-	private double radius;
+	protected double radius;
 	private final Shape shape;
 	private static final Logger logger = Logger.getLogger(CAreaSimilarityMetric.class.getName());
 
