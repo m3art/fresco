@@ -37,7 +37,7 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 	// transform items
 	CMenuItem rotateLeft, rotateRight, verticalFlip, mirrorFlip, perspectiveTrans;
 	// segmentation
-	CMenuItem colorQuantization;
+	CMenuItem colorQuantization, hueQuantization;
 	// support
 	CMenuItem registrationMarkSelector, regQuality;
 
@@ -222,6 +222,7 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 			rotateLeft.setEnabled(false);
 			rotateRight.setEnabled(false);
 			segmentationMenu.setEnabled(false);
+			hueQuantization.setEnabled(false);
 		} else {
 			save.setEnabled(true);
 			imageInfo.setEnabled(true);
@@ -233,6 +234,7 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 			rotateLeft.setEnabled(true);
 			rotateRight.setEnabled(true);
 			segmentationMenu.setEnabled(true);
+			hueQuantization.setEnabled(true);
 		}
 
 		if (CData.output == null) {
@@ -316,6 +318,10 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 		colorQuantization = new CMenuItem("Color quantization ...", RegID.colorQuantization);
 		colorQuantization.addActionListener(CData.userActionListener);
 		segmentationMenu.add(colorQuantization);
+
+		hueQuantization = new CMenuItem("Hue quantization ...", RegID.hueQuantization);
+		hueQuantization.addActionListener(CData.userActionListener);
+		segmentationMenu.add(hueQuantization);
 	}
 
 	private void createSupportMenu() {

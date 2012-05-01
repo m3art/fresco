@@ -20,8 +20,31 @@ public class Crgb2hsv extends CImageConverter {
 	 * @return hsv representation of input colors
 	 */
 	public static int[] convert(int[] rgb) {
-		int max, min;
-		int[] hsv = new int[3];
+
+		double[] rgbDouble = new double[rgb.length];
+		for(int i=0; i<rgb.length; i++)
+			rgbDouble[i] = rgb[i];
+
+		double[] outDouble;
+
+		outDouble = convert(rgbDouble);
+		int[] outInt = new int[outDouble.length];
+		for(int i=0; i< outInt.length; i++)
+			outInt[i] = (int)outDouble[i];
+
+		return outInt;
+	}
+
+	/**
+	 * this function converts rgb color to hsv. Input colors has range 0-255
+	 * output colors are integers with range - hue 0-359
+	 * saturation and value 0-255
+	 * @param rgb is input color
+	 * @return hsv representation of input colors
+	 */
+	public static double[] convert(double[] rgb) {
+		double max, min;
+		double[] hsv = new double[3];
 
 		//rgb = CVectorWorker.scalar(1.0/255, rgb);
 		max = CBasic.max(rgb);
@@ -156,9 +179,9 @@ public class Crgb2hsv extends CImageConverter {
 	 * @param rgb in range [0,255]
 	 * @return hue in range [0,360] this value is rounded
 	 */
-	public static int getHue(int[] rgb) {
-		int max, min;
-		int out = 0;
+	public static double getHue(double[] rgb) {
+		double max, min;
+		double out = 0;
 
 		//rgb = CVectorWorker.scalar(1.0/255, rgb);
 		max = CBasic.max(rgb);

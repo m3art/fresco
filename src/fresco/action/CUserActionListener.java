@@ -150,6 +150,7 @@ public class CUserActionListener implements ActionListener, ItemListener {
 				case patternAnalyzer:
 				case mutualInfo:
 				case colorQuantization:
+				case hueQuantization:
 				case laplace:
 				case registrationMarkSearch:
 				case registrationMarksQuality:

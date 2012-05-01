@@ -25,6 +25,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import support.CSupportWorker;
 import utils.metrics.CAreaSimilarityMetric;
+import utils.metrics.CCovarianceMetric;
 import utils.metrics.CCrossCorrelationMetric;
 import workers.registration.CPointPairs;
 
@@ -44,8 +45,9 @@ public class CPointPairsOverview extends CSupportWorker<JDialog, Void> {
 
 	public CPointPairsOverview(CPointPairs pairs, BufferedImage imageA, BufferedImage imageB) {
 		this.pairs = pairs;
-		metrics.add(new CCrossCorrelationMetric(imageA, imageB, 25, CAreaSimilarityMetric.Shape.CIRCULAR));
-		columnNames = new String[]{"No.", "cross corelation"};
+		metrics.add(new CCrossCorrelationMetric(imageA, imageB, 80, CAreaSimilarityMetric.Shape.CIRCULAR));
+		metrics.add(new CCovarianceMetric(imageA, imageB, 80, CAreaSimilarityMetric.Shape.CIRCULAR));
+		columnNames = new String[]{"No.", "cross corelation", "covariance"};
 
 		values = new double[pairs.size()][metrics.size()];
 	}

@@ -57,6 +57,7 @@ public interface IAction {
 		register,
 		// segmentation
 		colorQuantization,
+		hueQuantization,
 		//tools
 		registerMarks,
 		// support

@@ -5,39 +5,37 @@
 package workers.segmentation;
 
 import fresco.swing.CWorkerDialogFactory;
+import image.converters.Crgb2hsv;
 import info.clearthought.layout.TableLayout;
-import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.logging.Level;
-import utils.vector.CBasic;
-import java.util.Arrays;
 import java.util.logging.Logger;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import utils.vector.CBasic;
 
 /**
- * ColorQuantizer reduce number of colors used in picture. Used algorithm is
- * k-means
- * @author Honza Blazek
+ *
+ * @author gimli
  */
-public class CColorQuantizer extends CSegmentationWorker {
-
-	/** Default value for k. Output image will have this number of colours. */
+public class CHueQuantizer extends CSegmentationWorker {
+/** Default value for k. Output image will have this number of colours. */
 	public static int MEANS_DEFAULT = 100;
 	/** This number of nearest neighbors is updated other means keeps its places*/
-	public static int EVALUATED_NEIGHBORS_DEFAULT = 3;
+	public static int EVALUATED_NEIGHBORS_DEFAULT = 0;
 	/** In each iteration one pixel is evaluated */
-	public static double ITERATIONS_PER_PIXEL_DEFAULT = 0.33;
+	public static double ITERATIONS_PER_PIXEL_DEFAULT = 1;
 
 	private BufferedImage original, graphImage;
-	/** Floating values of colour means */
+	/** Floating values of hue means */
 	private CColorMean[] color;
 	/** Input image size */
 	private final Dimension size;
@@ -45,18 +43,37 @@ public class CColorQuantizer extends CSegmentationWorker {
 	/** Output map of segments */
 	CSegmentMap map;
 	/** Logging tool */
-	private static final Logger logger = Logger.getLogger(CColorQuantizer.class.getName());
+	private static final Logger logger = Logger.getLogger(CHueQuantizer.class.getName());
 
 	/** Creates new instance of CColorQuantizer
 	 * @param pat image to process
 	 */
-	public CColorQuantizer(BufferedImage pat) {
+	public CHueQuantizer(BufferedImage pat) {
 		original = pat;
 		bands = original.getSampleModel().getNumBands();
 		size = new Dimension(original.getWidth(), original.getHeight());
 		iters = (int)(size.width * size.height * ITERATIONS_PER_PIXEL_DEFAULT);
 		evaluatedNeighbors = EVALUATED_NEIGHBORS_DEFAULT;
 		means = MEANS_DEFAULT;
+	}
+
+	private class HueComparator implements Comparator<CColorMean> {
+
+		double ref;
+
+		public void setRef(double hue) {
+			ref = hue;
+		}
+
+		@Override
+		public int compare(CColorMean o1, CColorMean o2) {
+			if (Math.abs(o1.color[0] - ref)%360 < Math.abs(o2.color[0] - ref)%360)
+				return 1;
+			else if (Math.abs(o1.color[0] - ref) == Math.abs(o2.color[0] - ref))
+				return 0;
+			else
+				return -1;
+		}
 	}
 
 	/**
@@ -70,48 +87,52 @@ public class CColorQuantizer extends CSegmentationWorker {
 		//WritableRaster out = image.getRaster();
 		int i, j, x, y, nearest;
 		double err = 0;
-		CVectorMetric metric = new CVectorMetric(pixel);
 
 		color = new CColorMean[means];
 		map = new CSegmentMap(size.width, size.height, 0);
 
+
 		// means initialization
 		for (i = 0; i < means; i++) {
-			color[i] = new CColorMean(bands);
+			color[i] = new CColorMean(3);
 			x = (int) ((size.width - 1) * Math.random());
 			y = (int) ((size.height - 1) * Math.random());
-			raster.getPixel(x, y, color[i].color);
+			raster.getPixel(x, y, pixel);
+			color[i].color[0] = 360 * i / means;
+			color[i].color[1] = 128;
+			color[i].color[2] = 128;
 		}
+
+		HueComparator hueComparator = new HueComparator();
 
 		// recounting means
 		for (i = 0; i < iters; i++) {
 			setProgress(i * 100 / iters);
 			x = (int) ((size.width - 1) * Math.random());
 			y = (int) ((size.height - 1) * Math.random());
-			raster.getPixel(x, y, pixel); // pixel is randomly choosed
-			metric.setRef(pixel);
-			Arrays.sort(color, metric);
+			double hue = Crgb2hsv.getHue(raster.getPixel(x, y, pixel)); // pixel is randomly choosed
+			hueComparator.setRef(hue);
+			Arrays.sort(color, hueComparator);
 			for (j = 0; j < evaluatedNeighbors; j++) {
-				color[j].color = CBasic.sum(color[j].color,
-						CBasic.scalar(1.0 / (j + 1) / (1 + color[j].weight),
-						CBasic.diff(pixel, color[j].color)));
+				color[j].color[0] += 1/(1+j)/(1+color[j].weight)*(hue - color[j].color[0]);
+				color[j].color[0] %= 360;
 				color[j].weight++;
 			}
 			setProgress(100 * i / iters);
 		}
+		// classify pixels
 		for (x = 0; x < size.width; x++) {
 			for (y = 0; y < size.height; y++) {
 				raster.getPixel(x, y, pixel);
 				//pixel = CVectorWorker.normalize(pixel);
-				nearest = getNearestMean(pixel, color);
+				nearest = getNearestMean(Crgb2hsv.getHue(pixel), color);
 				map.setNumberAt(x, y, -nearest - 1);
 				err += CBasic.norm(CBasic.diff(pixel, color[nearest].color));
 				//out.setPixel(x, y, color[nearest].color);
 			}
 		}
 		//image.setData(out);
-		logger.log(Level.INFO, "Output error: {0}", err / (size.width * size.height));
-		setGraph();
+		System.out.println("Error: " + err / (size.width * size.height));
 
 		return getSegmentMap();
 	}
@@ -120,65 +141,18 @@ public class CColorQuantizer extends CSegmentationWorker {
 	 * @param pixel double array of colors for pixel
 	 * @param color double array of color means
 	 */
-	private int getNearestMean(double[] pixel, CColorMean[] color) {
+	private int getNearestMean(double hue, CColorMean[] color) {
 		int i, nearest = 0;
 		double error, min_error = 255 * 255 + 255 * 255 + 255 * 255;
 
 		for (i = 0; i < color.length; i++) {
-			error = CVectorMetric.getEukleid(pixel, color[i].color);
+			error = Math.abs(hue - color[i].color[0])%360;
 			if (error < min_error) {
 				nearest = i;
 				min_error = error;
 			}
 		}
 		return nearest;
-	}
-
-	/**
-	 * Mean graph shows how precise is approximation by means. Set of colours
-	 * contains few highlighted points (means).
-	 *
-	 * TODO: For usage 3D must be mapped.
-	 */
-	public void setGraph() {
-		final int width = 380, height = 380;
-		final int cross = 5;
-
-		graphImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-
-		Graphics2D graph = graphImage.createGraphics();
-		Raster raster = original.getRaster();
-		double[] pixel = new double[bands];
-		int i, j;
-		int x, y;
-
-		graph.setBackground(Color.white);
-		graph.clearRect(0, 0, width, height);
-
-		graph.setPaint(Color.red);
-		for (i = 0; i < original.getWidth(); i++) {
-			for (j = 0; j < original.getHeight(); j++) {
-				raster.getPixel(i, j, pixel);
-
-				x = (int) (pixel[0] + 0.5 * pixel[2]);
-				y = (int) (pixel[1] + 0.5 * pixel[2]);
-
-				graph.drawLine(x - cross / 2, y, x + cross / 2, y);
-				graph.drawLine(x, y - cross / 2, x, y + cross / 2);
-			}
-		}
-		graph.setPaint(Color.black);
-		for (i = 0; i < color.length; i++) {
-			x = (int) (color[i].color[0] + 0.5 * color[i].color[2]);
-			y = (int) (color[i].color[1] + 0.5 * color[i].color[2]);
-
-			graph.drawLine(x - cross, y, x + cross, y);
-			graph.drawLine(x, y - cross, x, y + cross);
-		}
-	}
-
-	public BufferedImage getGraph() {
-		return graphImage;
 	}
 
 	/**
@@ -194,7 +168,7 @@ public class CColorQuantizer extends CSegmentationWorker {
 		for (int x = 0; x < original.getWidth(); x++) {
 			for (int y = 0; y < original.getHeight(); y++) {
 				if ((segmentId = map.getNumberAt(x, y)) < 0) { // which are marked and not associated
-					segmentColor = color[-map.getNumberAt(x, y) - 1].getColor();
+					segmentColor = Crgb2hsv.inverse(color[-map.getNumberAt(x, y) - 1].getColor());
 					map.setNumberAt(x, y, map.getNumSegments());
 
 					segmentsFound.add(new Point(x, y)); // first point to check
@@ -300,7 +274,7 @@ public class CColorQuantizer extends CSegmentationWorker {
 
 		TableLayout layout = new TableLayout(new double[]{200,100}, new double[]{TableLayout.FILL});
 		content.setLayout(layout);
-		content.add(new JLabel("Set number of output colours:"),"0, 0");
+		content.add(new JLabel("Set number of output hues:"),"0, 0");
 		content.add(numOfColorsInput,"1, 0");
 
 		return CWorkerDialogFactory.createOkCancelDialog(this, content);

@@ -312,6 +312,7 @@ public class CActionManager {
 			logger.info("Operation interrupted");
 		} catch (ExecutionException ee) {
 			logger.log(Level.INFO, "Other exception: {0}", ee.getMessage());
+			ee.printStackTrace();
 		}
 		imageWorker = null;
 	}

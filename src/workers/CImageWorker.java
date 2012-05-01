@@ -22,6 +22,7 @@ import workers.registration.CPerspectiveTransformationWorker;
 import workers.registration.CPointPairs;
 import workers.registration.refpointga.CRefPointMarker;
 import workers.segmentation.CColorQuantizer;
+import workers.segmentation.CHueQuantizer;
 import workers.tools.CRotation;
 import workers.tools.CRotation.Rotation;
 
@@ -74,6 +75,8 @@ public abstract class CImageWorker<T, V> extends SwingWorker<T, V> implements II
 						CData.getImage(CData.showImage[2]).getImage());
 			case colorQuantization:
 				return new CColorQuantizer(CData.getImage(CData.showImage[0]).getImage());
+			case hueQuantization:
+				return new CHueQuantizer(CData.getImage(CData.showImage[0]).getImage());
 			case register:
 				return new CPerspectiveTransformationWorker(CData.getImage(CData.showImage[0]), CData.getImage(CData.showImage[2]));
 			case patternAnalyzer:
