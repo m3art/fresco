@@ -1,0 +1,42 @@
+package utils.metrics;
+
+import image.statiscics.CHistogram;
+import image.statiscics.CHistogramND;
+import java.awt.image.BufferedImage;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ * @author gimli
+ * @version May 1, 2012
+ */
+public class CMutualInformation extends CAreaSimilarityMetric {
+
+	private static final Logger logger = Logger.getLogger(CMutualInformation.class.getName());
+
+	public CMutualInformation(BufferedImage inputA, BufferedImage inputB, double radius, Shape shape) {
+		super(inputA, inputB, radius, shape);
+	}
+
+	@Override
+	protected double getValue(double[] inputAValues, double[] inputBValues) {
+
+		long start = System.currentTimeMillis();
+		CHistogram histA = CHistogram.createHistogram(inputAValues, (int)radius);
+		logger.log(Level.FINER, "Histogram A created: {0}", (System.currentTimeMillis()-start));
+
+		start = System.currentTimeMillis();
+		CHistogram histB = CHistogram.createHistogram(inputBValues, (int)radius);
+		logger.log(Level.FINER, "Histogram B created: {0}", (System.currentTimeMillis()-start));
+
+		start = System.currentTimeMillis();
+		double[][] valuesAB = new double[2][];
+		valuesAB[0] = inputAValues;
+		valuesAB[1] = inputBValues;
+		CHistogramND histAB = CHistogramND.createHistogram(valuesAB, new int[]{(int)radius, (int)radius});
+		logger.log(Level.FINER, "Histogram AB created: {0}", (System.currentTimeMillis()-start));
+
+		return histA.entropy + histB.entropy - histAB.entropy;
+	}
+
+}

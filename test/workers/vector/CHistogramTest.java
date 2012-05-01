@@ -55,7 +55,7 @@ public class CHistogramTest {
 	}
 
 	/**
-	 * Test of getHistogram method, of class CHistogram.
+	 * Test of createHistogram method, of class CHistogram.
 	 */
 	@Test
 	public void testGetHistogram_3args() {
@@ -120,7 +120,7 @@ public class CHistogramTest {
 	}
 
 	/**
-	 * Test of getHistogram method, of class CHistogram.
+	 * Test of createHistogram method, of class CHistogram.
 	 */
 	@Test
 	public void testGetHistogram_4args() {
