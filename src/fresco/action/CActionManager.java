@@ -252,7 +252,7 @@ public class CActionManager {
 		}
 
 		imageWorker.addPropertyChangeListener(progressBar);
-    JOptionPane.showMessageDialog(new JFrame(), imageWorker.getTypeName(), "That's running", JOptionPane.WARNING_MESSAGE);
+    //JOptionPane.showMessageDialog(new JFrame(), imageWorker.getTypeName(), "That's running", JOptionPane.WARNING_MESSAGE);
 		imageWorker.execute();
 	}
 
