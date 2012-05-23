@@ -23,7 +23,7 @@ public class CCrossCorrelationMetric extends CAreaSimilarityMetric {
 	}
 
 	@Override
-	protected double getValue(double[] inputAValues, double[] inputBValues) {
+	public double getValue(double[] inputAValues, double[] inputBValues) {
 		double crossVar = 0, varSrc = 0, varRef = 0;
 		long start = System.currentTimeMillis();
 		double meanA = CBasic.mean(inputAValues);

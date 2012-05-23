@@ -252,7 +252,7 @@ public class CActionManager {
 		}
 
 		imageWorker.addPropertyChangeListener(progressBar);
-    //JOptionPane.showMessageDialog(new JFrame(), imageWorker.getTypeName(), "That's running", JOptionPane.WARNING_MESSAGE);
+    
 		imageWorker.execute();
 	}
 
@@ -263,7 +263,9 @@ public class CActionManager {
 		imageWorker.removePropertyChangeListener(progressBar);
 		try {
 			logger.log(Level.INFO, "{0}, {1}", new Object[]{imageWorker.getTypeName(), imageWorker.getWorkerName()});
-			switch (imageWorker.getType()) {
+			
+      switch (imageWorker.getType()) {
+        
 				case ANALYSIS:
          	CData.output = new CImageContainer((BufferedImage) imageWorker.get(), true);
 					break;
@@ -272,7 +274,8 @@ public class CActionManager {
 					CData.output.setSegmentMap((CSegmentMap) imageWorker.get());
 					break;
 				case REGISTRATION:
-					CData.output = new CImageContainer((BufferedImage) imageWorker.get(), true);
+          
+          CData.output = new CImageContainer((BufferedImage) imageWorker.get(), true);
 					break;
 				case CORRECTOR:
 					CData.output = new CImageContainer((BufferedImage) imageWorker.get(), true);
@@ -282,7 +285,8 @@ public class CActionManager {
 					CData.output.setSegmentMap((CSegmentMap) imageWorker.get());
 					break;
 				case SUPPORT:
-					if (imageWorker instanceof CRefPointMarker) {
+					
+          if (imageWorker instanceof CRefPointMarker) {
 						logger.info("Marks distribution here");
 						CPointPairs pairs = (CPointPairs) imageWorker.get();
 
@@ -293,7 +297,16 @@ public class CActionManager {
 					} else if (imageWorker instanceof CPointPairsOverview) {
 						((CPointPairsOverview)imageWorker).get().setVisible(true);
 						return;
-					} else {
+					} else if (imageWorker instanceof CInterestingPoints) {
+            
+            logger.info("Interesting regmarks");
+            CPointPairs pairs = (CPointPairs) imageWorker.get();
+            CData.getImage(CData.showImage[0]).setMarks(pairs.getOrigins());
+            CData.getImage(CData.showImage[2]).setMarks(pairs.getProjected());
+            return;
+          }
+            else
+          {
 						CData.output = new CImageContainer((BufferedImage) imageWorker.get(), true);
 					}
 					break;
