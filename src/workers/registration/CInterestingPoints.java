@@ -29,74 +29,64 @@ import workers.segmentation.*;
 import java.awt.image.*;
 import java.awt.*;
 import javax.swing.*;
+import support.CSupportWorker;
+import workers.registration.refpointga.CPointAndTransformation;
+import java.awt.geom.Point2D;
+import java.util.ArrayList;
+import utils.metrics.*;
+
 
 
 /**
  *
  * @author Jakub
  */
-public class CInterestingPoints extends CRegistrationWorker {
+public class CInterestingPoints extends CSupportWorker<CPointPairs, CPointAndTransformation[]> {
   private static final Logger logger = Logger.getLogger(CImageWorker.class.getName());
-  public static int treshhold = 150;
-  private BufferedImage imageA;
-  
+  public static int treshhold = 180;
+  private BufferedImage imageA, imageB;
+  private CPointPairs pairsOut;
+  private CPointsAndQualities ptqA, ptqB;
+  private int[] black;
+  private int[] white;  
 
   @Override
   public String getWorkerName() {
     return "Interesting points search worker";
   }
 
-  public CInterestingPoints(BufferedImage image) {
-    this.imageA = image;
+  public CInterestingPoints(BufferedImage one, BufferedImage two) {
+    this.imageA = one;
+    this.imageB = two;
+    this.ptqA = new CPointsAndQualities();
+    this.ptqB = new CPointsAndQualities();
+    this.pairsOut = new CPointPairs();
+    
+    this.black = new int[3];
+    this.black[0] = 0;
+    this.black[1] = 0;
+    this.black[2] = 0;
+    this.white = new int[3];
+    this.white[0] = 255;
+    this.white[1] = 255;
+    this.white[2] = 255;
     
   }
   
-  @Override
-  protected BufferedImage doInBackground() {
-    
-    
-    CCannyEdgeDetector edgeMaker  = new CCannyEdgeDetector(imageA, 0.1f, 0.9f);
+  private CPointsAndQualities getPoints(BufferedImage input) {
+    BufferedImage edgedImage = null;
+    CPointsAndQualities tmpPts = new CPointsAndQualities();
+    CCannyEdgeDetector edgeMaker  = new CCannyEdgeDetector(input, 0.1f, 0.9f);
     try {
       edgeMaker.execute();
-    } catch (Exception e) {
-      JOptionPane.showMessageDialog(new JFrame(), "Exception in edges exec\n", "Interesting points stopped", JOptionPane.WARNING_MESSAGE); 
-    }
-    BufferedImage edgedImage = new BufferedImage(imageA.getWidth(), imageA.getHeight(), BufferedImage.TYPE_INT_RGB);
-    try {
+      //edgedImage = new BufferedImage(input.getWidth(), input.getHeight(), BufferedImage.TYPE_INT_RGB);
       edgedImage = (BufferedImage) edgeMaker.get();
     } catch (Exception e) {
-      JOptionPane.showMessageDialog(new JFrame(), "Exception in image ass\n", "Interesting points stopped", JOptionPane.WARNING_MESSAGE); 
+      JOptionPane.showMessageDialog(new JFrame(), "Exception in image edges\n", "Interesting points stopped", JOptionPane.WARNING_MESSAGE); 
     }
     
     Raster in1 = CNormalization.normalize((new Crgb2grey()).convert(edgedImage), 128, 64).getData();
-    BufferedImage output = new BufferedImage(imageA.getWidth(), imageA.getHeight(), BufferedImage.TYPE_INT_RGB);
-    WritableRaster tmp = output.getRaster();
-    
-    int[] pixA = new int[3];
-    int[] black = new int[3];
-    black[0] = 0;
-    black[1] = 0;
-    black[2] = 0;
-    int[] white = new int[3];
-    white[0] = 255;
-    white[1] = 255;
-    white[2] = 255;
-    
-    /*
-    for (int x = 0; x < in1.getWidth(); x++) {
-      for (int y = 0; y < in1.getHeight(); y++) {
-        in1.getPixel(x, y, pixA);
-        if (pixA[0] < 200){
-          tmp.setPixel(x, y, black);
-        }
-        else tmp.setPixel(x, y, white);
-        tmp.setPixel(x, y, pixA);
-        
-      }
-    } */    
-    //JOptionPane.showMessageDialog(new JFrame(), "Got through thresholding edges\n", "Interesting points stopped", JOptionPane.WARNING_MESSAGE); 
-    //output.setData(tmp);
-    
+    BufferedImage output = new BufferedImage(input.getWidth(), input.getHeight(), BufferedImage.TYPE_INT_RGB);
     WritableRaster out = output.getRaster();
     
     int [] current = null;
@@ -104,7 +94,10 @@ public class CInterestingPoints extends CRegistrationWorker {
     double intensity = 0;
     double [] retval = new double[5];
     
-    CCornerDetectorCOG CC = new CCornerDetectorCOG(21);
+    
+    //actual corner detection
+    
+    CCornerDetectorCOG CC = new CCornerDetectorCOG(17);
     int shift = (int)(CCornerDetectorCOG.size/2);
     
     for (int x = 0; x < in1.getWidth()-CCornerDetectorCOG.size; x++) {
@@ -112,18 +105,15 @@ public class CInterestingPoints extends CRegistrationWorker {
         current = in1.getSamples(x, y, CCornerDetectorCOG.size, CCornerDetectorCOG.size, 0, current);
         retval = CC.GetCOG(current, false);
         intensity = retval[0];
-        newpx[0] = newpx[1] = newpx[2] = (int)(retval[0] * 256);
-        
-        //newpx[0] = (int)(retval[2]*256); 
-        //newpx[1] = (int)(retval[3]*256); 
-        //newpx[2] = (int)(retval[4]*256); 
+        newpx[0] = newpx[1] = newpx[2] = (int)(intensity * 256);
         out.setPixel(x+shift, y+shift, newpx);
         setProgress(100 * (x * ((int) in1.getHeight()) + y) / ((int) (in1.getWidth() * in1.getHeight())));
-       
-   
       }
     }
     
+    
+    //normalization
+    //search for max
     double maxIntensity = 0;
     int [] px = new int[3];
     for (int a = 0; a < in1.getWidth()-CCornerDetectorCOG.size; a++) {
@@ -145,19 +135,11 @@ public class CInterestingPoints extends CRegistrationWorker {
         newpx[0] = newpx[1] = newpx[2] = newint ;
         
         if (newint > treshhold) {
-          imageA.getRaster().setPixel(a+shift, b+shift, white);
-          imageA.getRaster().setPixel(a+shift+1, b+shift, black);
-          imageA.getRaster().setPixel(a+shift+2, b+shift, black);
-          imageA.getRaster().setPixel(a+shift-1, b+shift, black);
-          imageA.getRaster().setPixel(a+shift-2, b+shift, black);
-          imageA.getRaster().setPixel(a+shift, b+shift+1, black);
-          imageA.getRaster().setPixel(a+shift, b+shift+2, black);
-          imageA.getRaster().setPixel(a+shift, b+shift-1, black);
-          imageA.getRaster().setPixel(a+shift, b+shift-2, black);
-        
+          logger.log(Level.INFO, "looking at point {0} {1} with {2} ? {3}", new Object[]{a, b, newint, treshhold});
+           Point2D.Double orig = new Point2D.Double(a+shift, b+shift);
+           logger.info("adding a point");
+           tmpPts.addPoint(orig, (double)newint/(256.0));
         }
-        //newpx[1] = newint; 
-        //newpx[2] = newint; 
         out.setPixel(a+shift, b+shift, newpx);
       }
     }
@@ -168,8 +150,112 @@ public class CInterestingPoints extends CRegistrationWorker {
     
     
     //return output;
-    return output;
+    //return pairs;
+    return tmpPts;
+  }
+  
+  
+  
+  @Override
+  protected CPointPairs doInBackground() {
+    ptqA = this.getPoints(imageA);
+    ptqB = this.getPoints(imageB);
     
+    int requestedPairs = 20;
+    double correlations[][] = new double[ptqA.size()][ptqB.size()];
+    
+    
+    Raster rasterA = CNormalization.normalize((new Crgb2grey()).convert(imageA), 128, 64).getData();
+    Raster rasterB = CNormalization.normalize((new Crgb2grey()).convert(imageB), 128, 64).getData();
+
+    int corshift = 5;
+    CCrossCorrelationMetric CC = new CCrossCorrelationMetric(imageA, imageB, 2*corshift+1, CAreaSimilarityMetric.Shape.RECTANGULAR);
+    for (int i = 0; i < ptqA.size() ; i++) {
+      setProgress(100 * i / ptqA.size());
+      
+      Point2D.Double a = ptqA.getPoint(i);
+      int AX = (int)a.x;
+      int AY = (int)a.y;
+      logger.info("now at "+i+" out of " + ptqA.size()+" "+a.x+" x "+a.y);
+      boolean AisEdge = false;
+      if ((AX < (2*corshift+1)) || (AX >= rasterA.getWidth()-(2*corshift+1)) || (AY < (2*corshift+1)) || (AY >= rasterA.getHeight()-(2*corshift+1))) {
+        //pairsOut.addPointPair(a, new Point2D.Double(0, 0));
+        AisEdge = true;
+      }
+      else {
+        //Point2D.Double pointA = new Point2D.Double();
+        //pointA = a;
+        //Point2D.Double pointB = new Point2D.Double();
+        double currentA[] = null;
+        double currentB[] = null;
+        
+        currentA = rasterA.getSamples(AX, AY, 2*corshift+1, 2*corshift+1, 0, currentA);
+        
+        if (ptqB.size() ==  0) break;
+        for (int j = 0; j < ptqB.size() ; j++) {
+          boolean BisEdge = false;
+          Point2D.Double b = ptqB.getPoint(j);
+          int BX = (int)b.x;
+          int BY = (int)b.y;
+          if ((BX < (2*corshift+1)) || (BX >= rasterA.getWidth()-(2*corshift+1)) || (BY < (2*corshift+1)) || (BY >= rasterA.getHeight()-(2*corshift+1))) {
+            BisEdge = true;
+          }
+          
+          if (AisEdge || BisEdge) {
+        
+            correlations[i][j] = 0.0;
+          }
+          else {
+            
+            currentB = rasterB.getSamples(BX-corshift, BY-corshift, 2*corshift+1, 2*corshift+1, 0, currentB);
+            double ssd = 0;
+            
+            for (int k = 0; k < Math.pow(2*corshift+1, 2); k++) {
+              ssd += (double)Math.pow(currentA[k] - currentB[k], 2)/65536;       
+            }
+            
+            ssd /= Math.pow(2*corshift+1, 2);
+            
+            
+            if (ssd < 0.01) logger.info(i+"x"+j+": "+ssd);
+            
+            
+            
+            correlations[i][j] = CC.getValue(currentA, currentB);
+          }
+        }
+      }
+    }
+    
+    
+    for (int i = 0; i < requestedPairs; i++) {
+      double maxCor = 0.0;
+      int maxA = 0;
+      int maxB = 0;
+      for (int a = 0; a < ptqA.size(); a++) {
+        for (int b = 0; b < ptqB.size(); b++) {
+          
+          if (correlations[a][b] > maxCor) {
+            maxA = a;
+            maxB = b;
+            maxCor = correlations[a][b];
+          }
+        }
+      }
+      
+      if ((maxCor == 0.0) || (maxA == 0) || (maxB == 0)) break;
+      
+      pairsOut.addPointPair(ptqA.getPoint(maxA), ptqB.getPoint(maxB));
+      for (int a = 0; a < ptqA.size(); a++) {
+        correlations[a][maxB] = 0.0;
+      
+      }
+      for (int b = 0; b < ptqB.size(); b++) {
+        correlations[maxA][b] = 0.0;
+      }
+    }
+    return pairsOut;
   }
 }
+
 
