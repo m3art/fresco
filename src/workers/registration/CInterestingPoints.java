@@ -43,7 +43,7 @@ import utils.metrics.*;
  */
 public class CInterestingPoints extends CSupportWorker<CPointPairs, CPointAndTransformation[]> {
   private static final Logger logger = Logger.getLogger(CImageWorker.class.getName());
-  public static int treshhold = 180;
+  public static int treshhold = 195;
   private BufferedImage imageA, imageB;
   private CPointPairs pairsOut;
   private CPointsAndQualities ptqA, ptqB;
@@ -97,7 +97,7 @@ public class CInterestingPoints extends CSupportWorker<CPointPairs, CPointAndTra
     
     //actual corner detection
     
-    CCornerDetectorCOG CC = new CCornerDetectorCOG(17);
+    CCornerDetectorCOG CC = new CCornerDetectorCOG(21);
     int shift = (int)(CCornerDetectorCOG.size/2);
     
     for (int x = 0; x < in1.getWidth()-CCornerDetectorCOG.size; x++) {
@@ -161,14 +161,15 @@ public class CInterestingPoints extends CSupportWorker<CPointPairs, CPointAndTra
     ptqA = this.getPoints(imageA);
     ptqB = this.getPoints(imageB);
     
-    int requestedPairs = 20;
+    int requestedPairs = 30;
     double correlations[][] = new double[ptqA.size()][ptqB.size()];
     
     
     Raster rasterA = CNormalization.normalize((new Crgb2grey()).convert(imageA), 128, 64).getData();
     Raster rasterB = CNormalization.normalize((new Crgb2grey()).convert(imageB), 128, 64).getData();
 
-    int corshift = 5;
+    int corshift = 7;
+    CCovarianceMetric CV = new CCovarianceMetric(imageA, imageB, 2*corshift+1, CAreaSimilarityMetric.Shape.RECTANGULAR);
     CCrossCorrelationMetric CC = new CCrossCorrelationMetric(imageA, imageB, 2*corshift+1, CAreaSimilarityMetric.Shape.RECTANGULAR);
     for (int i = 0; i < ptqA.size() ; i++) {
       setProgress(100 * i / ptqA.size());
@@ -213,15 +214,13 @@ public class CInterestingPoints extends CSupportWorker<CPointPairs, CPointAndTra
             for (int k = 0; k < Math.pow(2*corshift+1, 2); k++) {
               ssd += (double)Math.pow(currentA[k] - currentB[k], 2)/65536;       
             }
-            
             ssd /= Math.pow(2*corshift+1, 2);
+            //if (ssd < 0.005) logger.info(i+"x"+j+": "+ssd);
+            double cc = CC.getDistance(a, b);
+            double cv = CV.getDistance(a, b);
+            if (cc > 0.5) logger.info(i+"x"+j+": "+cc);
             
-            
-            if (ssd < 0.01) logger.info(i+"x"+j+": "+ssd);
-            
-            
-            
-            correlations[i][j] = CC.getValue(currentA, currentB);
+            correlations[i][j] = cc;
           }
         }
       }
@@ -230,11 +229,10 @@ public class CInterestingPoints extends CSupportWorker<CPointPairs, CPointAndTra
     
     for (int i = 0; i < requestedPairs; i++) {
       double maxCor = 0.0;
-      int maxA = 0;
-      int maxB = 0;
+      int maxA = -1;
+      int maxB = -1;
       for (int a = 0; a < ptqA.size(); a++) {
         for (int b = 0; b < ptqB.size(); b++) {
-          
           if (correlations[a][b] > maxCor) {
             maxA = a;
             maxB = b;
@@ -242,8 +240,8 @@ public class CInterestingPoints extends CSupportWorker<CPointPairs, CPointAndTra
           }
         }
       }
-      
-      if ((maxCor == 0.0) || (maxA == 0) || (maxB == 0)) break;
+      logger.info(maxA+"+"+maxB);
+      if ((maxCor <= 0.0) || (maxA == -1) || (maxB == -1)) break;
       
       pairsOut.addPointPair(ptqA.getPoint(maxA), ptqB.getPoint(maxB));
       for (int a = 0; a < ptqA.size(); a++) {
@@ -254,6 +252,11 @@ public class CInterestingPoints extends CSupportWorker<CPointPairs, CPointAndTra
         correlations[maxA][b] = 0.0;
       }
     }
+    
+    //pairsOut.origins = ptqA.points;
+    //pairsOut.projected = ptqB.points;
+    //logger.info("c6464: "+correlations[63][63]);
+    
     return pairsOut;
   }
 }
