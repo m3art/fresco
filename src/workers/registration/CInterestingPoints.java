@@ -43,7 +43,7 @@ import utils.metrics.*;
  */
 public class CInterestingPoints extends CSupportWorker<CPointPairs, CPointAndTransformation[]> {
   private static final Logger logger = Logger.getLogger(CImageWorker.class.getName());
-  public static int treshhold = 195;
+  public static int treshhold = 195; //TODO parametrize
   private BufferedImage imageA, imageB;
   private CPointPairs pairsOut;
   private CPointsAndQualities ptqA, ptqB;
@@ -97,6 +97,7 @@ public class CInterestingPoints extends CSupportWorker<CPointPairs, CPointAndTra
     
     //actual corner detection
     
+    //TODO parametrize
     CCornerDetectorCOG CC = new CCornerDetectorCOG(21);
     int shift = (int)(CCornerDetectorCOG.size/2);
     
@@ -161,14 +162,14 @@ public class CInterestingPoints extends CSupportWorker<CPointPairs, CPointAndTra
     ptqA = this.getPoints(imageA);
     ptqB = this.getPoints(imageB);
     
-    int requestedPairs = 30;
+    int requestedPairs = 30; //TODO parametrize
     double correlations[][] = new double[ptqA.size()][ptqB.size()];
     
     
     Raster rasterA = CNormalization.normalize((new Crgb2grey()).convert(imageA), 128, 64).getData();
     Raster rasterB = CNormalization.normalize((new Crgb2grey()).convert(imageB), 128, 64).getData();
 
-    int corshift = 7;
+    int corshift = 7; //TODO parametrize
     CCovarianceMetric CV = new CCovarianceMetric(imageA, imageB, 2*corshift+1, CAreaSimilarityMetric.Shape.RECTANGULAR);
     CCrossCorrelationMetric CC = new CCrossCorrelationMetric(imageA, imageB, 2*corshift+1, CAreaSimilarityMetric.Shape.RECTANGULAR);
     for (int i = 0; i < ptqA.size() ; i++) {
