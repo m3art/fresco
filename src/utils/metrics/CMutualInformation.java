@@ -1,3 +1,7 @@
+/*
+ * Part of Fresco software under GPL licence
+ * http://www.gnu.org/licenses/gpl-3.0.txt
+ */
 package utils.metrics;
 
 import image.statiscics.CHistogram;

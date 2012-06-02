@@ -1,3 +1,7 @@
+/*
+ * Part of Fresco software under GPL licence
+ * http://www.gnu.org/licenses/gpl-3.0.txt
+ */
 package image.statiscics;
 
 /**
@@ -6,7 +10,7 @@ package image.statiscics;
  */
 public class CHistogramND {
 
-	private final static double EPSILON = 0.1;
+	public final static double EPSILON = 0.001;
 	/** Number of dimensions */
 	public int dimensions;
 	/** Number of histogram bins in each dimension*/
@@ -46,6 +50,13 @@ public class CHistogramND {
 		entropy = 0;
 	}
 
+	/**
+	 * For multidimensional histogram are bins stored in one dimensional array.
+	 * This method transcript multidimensional coords of bin {@param binNumbers}
+	 * according to number of {@param bins} in each dimension and return index
+	 * in internal field
+	 * @return transforms i.e.: [3,8,5] -> 38
+	 */
 	public static int getBinNumber(int[] binNumbers, int[] bins) {
 		int binNumber = 0;
 		for(int i = bins.length - 1; i >= 0; i--) {
@@ -57,8 +68,8 @@ public class CHistogramND {
 	/**
 	 * Creates multidimensional histogram
 	 *
-	 * @param inputValues contains in each row one dimensional values, number of
-	 * rows must correspond with dimensionality of bins
+	 * @param inputValues contains in each row one dimension of values, number of
+	 * rows must correspond with length of bins
 	 * @param bins number of histogram bins in each dimension
 	 * @return created multidimensional histogram
 	 */
