@@ -26,7 +26,7 @@ public class CPopupMenu extends MouseAdapter {
 		open.addActionListener(CData.userActionListener);
 		previewPopUp.add(open);
 
-		CPopupMenuItem saveAs = new CPopupMenuItem("Save As ...", RegID.imageSave, id);
+		CPopupMenuItem saveAs = new CPopupMenuItem("Save As ...", RegID.saveAs, id);
 		saveAs.addActionListener(CData.userActionListener);
 		previewPopUp.add(saveAs);
 
