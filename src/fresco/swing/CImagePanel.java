@@ -114,8 +114,9 @@ public class CImagePanel extends CDrawPanel implements Scrollable, MouseListener
 			g.setColor(markFg[i % markBg.length]);
 			g.drawLine(x + CROSS_SIZE, y, x - CROSS_SIZE, y);
 			g.drawLine(x, y + CROSS_SIZE, x, y - CROSS_SIZE);
-			g.setColor(Color.red);
+			g.setColor(Color.gray);
 			g.drawArc(x - CPointPairsOverview.AREA_SIZE/2, y - CPointPairsOverview.AREA_SIZE/2, CPointPairsOverview.AREA_SIZE, CPointPairsOverview.AREA_SIZE, 0, 360);
+			g.setColor(markFg[i % markBg.length]);
 			logger.log(Level.FINEST, "Mark was painted: {0}, {1}", new Object[]{x, y});
 			i++;
 
