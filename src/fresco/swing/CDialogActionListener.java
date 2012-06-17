@@ -20,19 +20,23 @@ public class CDialogActionListener implements ActionListener {
 		this.worker = worker;
 	}
 
+	@Override
 	public void actionPerformed(ActionEvent e) {
+		Component component = (Component)e.getSource();
+		while(!(component instanceof JDialog)) {
+			component = component.getParent();
+		}
+		((JDialog)component).setVisible(false);
+		((JDialog)component).dispose();
+
 		if (e.getActionCommand().equals(CWorkerDialogFactory.OK_COMMAND)) {
 			if (worker.confirmDialog()) {
-				// parameters are valid and correctly parsed
-				Component component = (Component)e.getSource();
-				while(!(component instanceof JDialog)) {
-					component = component.getParent();
-				}
-				((JDialog)component).setVisible(false);
-				((JDialog)component).dispose();
+				worker.execute();
 			} else {
 				logger.warning("Params are not valid");
 			}
+		} else if (e.getActionCommand().equals(CWorkerDialogFactory.CANCEL_COMMAND)) {
+			logger.fine("Dialog canceled.");
 		}
 	}
 }

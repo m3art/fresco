@@ -22,6 +22,9 @@ public class CWorkerDialogFactory {
 	public static JDialog createOkCancelDialog(CImageWorker worker, JComponent content) {
 
 		JDialog dialog = new JDialog(CData.mainFrame, worker.getWorkerName(), ModalityType.APPLICATION_MODAL);
+		dialog.setLocationRelativeTo(CData.mainFrame.contentPane);
+		dialog.setFocusCycleRoot(true);
+
 		JButton ok = new JButton(OK_COMMAND);
 		JButton cancel = new JButton(CANCEL_COMMAND);
 		final CDialogActionListener actionListener = new CDialogActionListener(worker);
@@ -38,6 +41,7 @@ public class CWorkerDialogFactory {
 		dialog.add(content, BorderLayout.CENTER);
 		dialog.add(buttons, BorderLayout.SOUTH);
 
+		dialog.getRootPane().setDefaultButton(ok);
 		dialog.validate();
 		dialog.pack();
 

@@ -4,12 +4,46 @@
  */
 package image.converters;
 
+import java.awt.image.BufferedImage;
 import utils.vector.CBasic;
 
 public class Crgb2hsv extends CImageConverter {
 
+	@Override
 	protected int[] convertPixel(int[] rgb) {
 		return convert(rgb);
+	}
+
+	/**
+	 * Converts Buffered image in format RGB into double array with Hue Saturation
+	 * and Value dimensions
+	 * @param rgbImage converted image
+	 * @return HSV matrix representation of image
+	 */
+	public static int[][][] convertImage(BufferedImage rgbImage){
+		int[][][] out = new int[rgbImage.getWidth()][rgbImage.getHeight()][];
+
+		int[][][] rgb = CBufferedImageToIntArray.convert(rgbImage);
+
+		for(int x=0; x<rgbImage.getWidth(); x++)
+			for(int y=0; y<rgbImage.getHeight(); y++) {
+				out[x][y] = convert(rgb[x][y]);
+			}
+
+		return out;
+	}
+
+	public static double[][][] convertImageToDouble(BufferedImage rgbImage) {
+		double[][][] out = new double[rgbImage.getWidth()][rgbImage.getHeight()][];
+
+		double[][][] rgb = CBufferedImageToDoubleArray.convert(rgbImage);
+
+		for(int x=0; x<rgbImage.getWidth(); x++)
+			for(int y=0; y<rgbImage.getHeight(); y++) {
+				out[x][y] = convert(rgb[x][y]);
+			}
+
+		return out;
 	}
 
 	/**
@@ -171,6 +205,40 @@ public class Crgb2hsv extends CImageConverter {
 				break;
 		}
 		return rgb;
+	}
+
+	/**
+	 * Convert matrix width*height*band from hsv colour space into RGB
+	 * @param hsvImage input matrix
+	 * @return RGB image
+	 */
+	public static int[][][] inverse(int[][][] hsvImage) {
+		int[][][] rgbImage = new int[hsvImage.length][hsvImage[0].length][];
+
+		for(int x=0; x<hsvImage.length; x++) {
+			for(int y=0; y<hsvImage[0].length; y++) {
+				rgbImage[x][y] = inverse(hsvImage[x][y]);
+			}
+		}
+
+		return rgbImage;
+	}
+
+	/**
+	 * Convert matrix width*height*band from hsv colour space into RGB
+	 * @param hsvImage input matrix
+	 * @return RGB image
+	 */
+	public static double[][][] inverse(double[][][] hsvImage) {
+		double[][][] rgbImage = new double[hsvImage.length][hsvImage[0].length][];
+
+		for(int x=0; x<hsvImage.length; x++) {
+			for(int y=0; y<hsvImage[0].length; y++) {
+				rgbImage[x][y] = inverse(hsvImage[x][y]);
+			}
+		}
+
+		return rgbImage;
 	}
 
 	/**

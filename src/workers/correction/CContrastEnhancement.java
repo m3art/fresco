@@ -21,7 +21,7 @@ import utils.vector.CBasic;
 public class CContrastEnhancement extends CCorrectionWorker {
 
 	Raster original;
-	static double[] //Cw = {0.1978,   0.4683},
+	final static double[] //Cw = {0.1978,   0.4683},
 			Cw = {4.0 / 19, 9.0 / 19},
 			Cr = {0.4507, 0.5229},
 			Cg = {0.1250, 0.5625},
@@ -84,7 +84,7 @@ public class CContrastEnhancement extends CCorrectionWorker {
 		}
 
 		// AHE algorithm
-		uvY = (new CAdaptiveHistogramEnhancing(uvY, 2, region_size)).AHE();
+		uvY = (new CAdaptiveHistogramEnhancing(uvY, region_size)).AHE();
 
 		// transfer colors back to RGB
 		for (x = 0; x < original.getWidth(); x++) {
