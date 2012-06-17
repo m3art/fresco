@@ -2,7 +2,7 @@
  * Part of Fresco software under GPL licence
  * http://www.gnu.org/licenses/gpl-3.0.txt
  */
-package workers.analyse;
+package workers.analyse.pca;
 
 /**
  * @author Honza Blazek
@@ -10,11 +10,12 @@ package workers.analyse;
 import utils.vector.CBasic;
 import java.awt.image.*;
 import java.awt.*;
+import workers.analyse.CAnalysisWorker;
 
 /** class for Principal Component Analysis of Color Space of the picture
  *  color space is limited to 2D vector (form 3D color space)
  */
-public class CPCAWorker extends CAnalysisWorker {
+public class COjaPcaWorker extends CAnalysisWorker {
 
 	private int bands;
 	private double[] mean, deviation; // normalization konstants
@@ -25,7 +26,7 @@ public class CPCAWorker extends CAnalysisWorker {
 	private int dimension;
 
 	/** Do PCA analysis on 3D color to 2D color */
-	public CPCAWorker(BufferedImage pat, int dim) {
+	public COjaPcaWorker(BufferedImage pat, int dim) {
 		int i, j;
 
 		Raster raster = pat.getRaster();
@@ -49,7 +50,7 @@ public class CPCAWorker extends CAnalysisWorker {
 	 * @param pat data k-dimensional
 	 * @param dim output dimension vector
 	 */
-	public CPCAWorker(int[][][] pat, int dim) {
+	public COjaPcaWorker(int[][][] pat, int dim) {
 		original = pat;
 		dimension = dim;
 
@@ -61,7 +62,7 @@ public class CPCAWorker extends CAnalysisWorker {
 		//System.out.println(bands);
 	}
 
-	public CPCAWorker(BufferedImage image1, BufferedImage image2, int dim) {
+	public COjaPcaWorker(BufferedImage image1, BufferedImage image2, int dim) {
 		int i, j, b;
 		Raster r1 = image1.getData();
 		Raster r2 = image2.getData();
