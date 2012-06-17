@@ -63,8 +63,9 @@ public class Crgb2hsv extends CImageConverter {
 
 		outDouble = convert(rgbDouble);
 		int[] outInt = new int[outDouble.length];
-		for(int i=0; i< outInt.length; i++)
-			outInt[i] = (int)outDouble[i];
+		for(int i=0; i< outInt.length; i++) {
+			outInt[i] = (int)Math.round(outDouble[i]);
+		}
 
 		return outInt;
 	}
@@ -106,100 +107,63 @@ public class Crgb2hsv extends CImageConverter {
 	}
 
 	public static int[] inverse(int[] hsv) {
-		int hi, p, q, t;
-		int[] rgb = new int[rgb_bands];
-		double[] hsvd = new double[hsv_bands];
-		double f;
+		double[] hsvd = {hsv[0], hsv[1], hsv[2]};
+		double[] result = inverse(hsvd);
 
-		hsvd[0] = (double) hsv[0];
-		hsvd[1] = (double) (hsv[1]) / 255;
-		hsvd[2] = (double) (hsv[2]) / 255;
-
-		hi = (hsv[0] / 60) % 6; //2
-		f = hsvd[0] / 60 - hi;
-		p = (int) ((hsvd[2] * (1 - hsvd[1])) * 255);
-		q = (int) ((hsvd[2] * (1 - hsvd[1] * f)) * 255);
-		t = (int) ((hsvd[2] * (1 - (1 - f) * hsvd[1])) * 255);
-
-		switch (hi) {
-			case 0:
-				rgb[0] = (int) (hsvd[2] * 255);
-				rgb[1] = t;
-				rgb[2] = p;
-				break;
-			case 1:
-				rgb[0] = q;
-				rgb[1] = (int) (hsvd[2] * 255);
-				rgb[2] = p;
-				break;
-			case 2:
-				rgb[0] = p;
-				rgb[1] = (int) (hsvd[2] * 255);
-				rgb[2] = t;
-				break;
-			case 3:
-				rgb[0] = p;
-				rgb[1] = q;
-				rgb[2] = (int) (hsvd[2] * 255);
-				break;
-			case 4:
-				rgb[0] = t;
-				rgb[1] = p;
-				rgb[2] = (int) (hsvd[2] * 255);
-				break;
-			case 5:
-				rgb[0] = (int) (hsvd[2] * 255);
-				rgb[1] = p;
-				rgb[2] = q;
-				break;
-		}
-		return rgb;
+		return new int[]{(int)Math.round(result[0]), (int)Math.round(result[1]), (int)Math.round(result[2])};
 	}
 
+	/**
+	 * Expected input of inverse transformation is hue [0,360], saturation [0,255]
+	 * value [0,255]
+	 * @param hsv
+	 * @return
+	 */
 	public static double[] inverse(double[] hsv) {
-		int hi, p, q, t;
+		int hi;
+		double p, q, t;
 		double[] rgb = new double[rgb_bands];
 		double[] hsvd = new double[hsv_bands];
 		double f;
 
-		hsvd[0] = hsv[0] * 360 / 256;
-		hsvd[1] = hsv[1] / 255;
-		hsvd[2] = hsv[2] / 255;
+		hsvd[0] = hsv[0];
+		hsvd[1] = hsv[1] / 255.0;
+		hsvd[2] = hsv[2] / 255.0;
 
-		hi = (int) (hsvd[0]) / 60;
+		hi = (int) ((hsvd[0]) / 60) % 6;
 		f = hsvd[0] / 60 - hi;
-		p = (int) (255 * hsvd[2] * (1 - hsvd[1]));
-		q = (int) (255 * hsvd[2] * (1 - hsvd[1] * f));
-		t = (int) (255 * hsvd[2] * (1 - (1 - f) * hsvd[1]));
+		p = 255 * hsvd[2] * (1 - hsvd[1]);
+		q = 255 * hsvd[2] * (1 - hsvd[1] * f);
+		t = 255 * hsvd[2] * (1 - (1 - f) * hsvd[1]);
 
 		switch (hi) {
 			case 0:
-				rgb[0] = (int) (255 * hsvd[2]);
+				rgb[0] = hsv[2];
 				rgb[1] = t;
 				rgb[2] = p;
 				break;
 			case 1:
 				rgb[0] = q;
-				rgb[1] = (int) (255 * hsvd[2]);
+				rgb[1] = hsv[2];
 				rgb[2] = p;
 				break;
 			case 2:
 				rgb[0] = p;
-				rgb[1] = (int) (255 * hsvd[2]);
+				rgb[1] = hsv[2];
 				rgb[2] = t;
 				break;
 			case 3:
 				rgb[0] = p;
 				rgb[1] = q;
-				rgb[2] = (int) (255 * hsvd[2]);
+				rgb[2] = hsv[2];
 				break;
 			case 4:
 				rgb[0] = t;
 				rgb[1] = p;
-				rgb[2] = (int) (255 * hsvd[2]);
+				rgb[2] = hsv[2];
 				break;
 			case 5:
-				rgb[0] = (int) (255 * hsvd[2]);
+				rgb[0] = hsv[2];
 				rgb[1] = p;
 				rgb[2] = q;
 				break;

@@ -30,7 +30,7 @@ import javax.swing.*;
 public class CAdaptiveHistogramEnhancing extends CCorrectionWorker {
 
 	/** Range specifies distance between maximal and minimal output value (in one contrast segment) */
-	public int range = 255, s_max = 5;
+	public int histCut = 3, s_max = 5;
 	/** Size of reference region size */
 	private int regionSize = 150;
 	private int[][] grayScaleImage;
@@ -41,8 +41,6 @@ public class CAdaptiveHistogramEnhancing extends CCorrectionWorker {
 	BufferedImage image;
 	private double[][][] pixels;
 	private static final Logger logger = Logger.getLogger(CAdaptiveHistogramEnhancing.class.getName());
-	double alpha = 3;
-	double beta = (range * (1 + alpha / 100 * (s_max - 1)) / (regionSize * regionSize));
 	boolean rgb;
 
 	public CAdaptiveHistogramEnhancing(BufferedImage image) {
@@ -71,7 +69,6 @@ public class CAdaptiveHistogramEnhancing extends CCorrectionWorker {
 
 		width = image.getWidth();
 		height = image.getHeight();
-		beta = (range * (1 + alpha / 100 * (s_max - 1)) / (regionSize * regionSize));
 
 		grayScaleImage = new int[width][height];
 		for (int x = 0; x < width; x++) {
@@ -140,7 +137,8 @@ public class CAdaptiveHistogramEnhancing extends CCorrectionWorker {
 						neighs += (x - pos.x + 3 * regionSize / 2) * (y - pos.y + 3 * regionSize / 2);
 					}
 					if (neighs != 0) {
-						pixels[x][y][band] = out[x][y] / (neighs * range);
+						pixels[x][y][band] = out[x][y] / neighs;
+						Math.max(0,Math.min(pixels[x][y][band],255));
 					} else {
 						pixels[x][y][band] = 0;
 					}
@@ -210,18 +208,26 @@ public class CAdaptiveHistogramEnhancing extends CCorrectionWorker {
 		if (hist == null) {
 			return null;
 		}
-		int i, sum = 0, min = 0;
+		int i, sum = 0, min = 0, residuum = 0;
 
 		for (i = 0; i < hist.length; i++) {
 			if (hist[i] > 0 && min == 0) {
 				min = hist[i];
 			}
-			sum += hist[i];
+			if (histCut > hist[i]) {
+				sum += hist[i];
+			} else {
+				sum += histCut;
+				residuum += hist[i] - histCut;
+			}
 			hist[i] = sum;
 		}
+
+		logger.log(Level.FINE, "Residuum: {0}", residuum/hist.length);
+
 		if (sum - min != 0) {
 			for (i = 0; i < hist.length; i++) {
-				hist[i] = (int) Math.round((hist[i] - min) * beta * (regionSize * regionSize) / sum);
+				hist[i] = (int) Math.round((hist[i] - min) * 255 / sum);
 			}
 		}
 
@@ -234,8 +240,8 @@ public class CAdaptiveHistogramEnhancing extends CCorrectionWorker {
 		return true;
 	}
 
-	JTextField regSize = new JTextField("200",6);
-	JSlider effect = new JSlider(JSlider.HORIZONTAL, 0, 100, 100);
+	JTextField regSize;
+	JSlider effect = new JSlider(JSlider.HORIZONTAL, 3, 20, 4);
 
 	/**
 	 * Evaluate values set by user. Default Worker does not support user input.
@@ -246,7 +252,7 @@ public class CAdaptiveHistogramEnhancing extends CCorrectionWorker {
 	public boolean confirmDialog() {
 		try {
 			this.regionSize = Integer.valueOf(regSize.getText());
-			this.range = effect.getValue();
+			this.histCut = effect.getValue();
 			return true;
 		} catch (NumberFormatException nfe) {
 			logger.warning("Input value for region size is not a valid integer.");
@@ -265,6 +271,7 @@ public class CAdaptiveHistogramEnhancing extends CCorrectionWorker {
 		JPanel inputs = new JPanel();
 
 		JLabel regSizeLabel = new JLabel("Region size:", SwingConstants.RIGHT);
+		regSize = new JTextField(Integer.toString((int)(Math.sqrt(image.getWidth()*image.getHeight())/4)),6);
 		JLabel effectLabel = new JLabel("Effect:", SwingConstants.RIGHT);
 
 		TableLayout layout = new TableLayout(new double[]{5, TableLayout.FILL, 5, TableLayout.FILL, 5},new double[]{5, TableLayout.FILL, 5, TableLayout.FILL, 5});
