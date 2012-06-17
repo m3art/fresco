@@ -11,5 +11,5 @@ package workers.correction;
 public class CAHEParams {
 
 	public int effect;
-	public int region_size;
+	public int regionSize;
 }

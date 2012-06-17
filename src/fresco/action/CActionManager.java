@@ -250,12 +250,12 @@ public class CActionManager {
 		imageWorker = CImageWorker.createWorker(id, params);
 
 		JDialog dialog = imageWorker.getParamSettingDialog();
+		imageWorker.addPropertyChangeListener(progressBar);
 		if (dialog != null) {
 			dialog.setVisible(true);
+		} else {
+			imageWorker.execute();
 		}
-
-		imageWorker.addPropertyChangeListener(progressBar);
-		imageWorker.execute();
 	}
 
 	public void cleanImageWorker() {

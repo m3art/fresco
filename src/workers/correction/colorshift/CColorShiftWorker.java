@@ -2,7 +2,7 @@
  * Part of Fresco software under GPL licence
  * http://www.gnu.org/licenses/gpl-3.0.txt
  */
-package workers.correction;
+package workers.correction.colorshift;
 
 import fresco.CImageContainer;
 import fresco.swing.CColorShiftDialog;
@@ -11,6 +11,7 @@ import java.awt.image.WritableRaster;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
 import image.statiscics.CHistogram;
+import workers.correction.CCorrectionWorker;
 
 /**
  *
