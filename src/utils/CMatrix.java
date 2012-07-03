@@ -58,4 +58,30 @@ public class CMatrix {
 			System.out.println();
 		}
 	}
+
+	public static double[][] reshape(double[][] A, int m, int n) {
+        int origM = A.length;
+        int origN = A[0].length;
+        if(origM*origN != m*n){
+            throw new IllegalArgumentException("New matrix must be of same area as matix A");
+        }
+        double[][] B = new double[m][n];
+        double[] A1D = new double[A.length * A[0].length];
+
+        int index = 0;
+        for(int i = 0;i<A.length;i++){
+            for(int j = 0;j<A[0].length;j++){
+                A1D[index++] = A[i][j];
+            }
+        }
+
+        index = 0;
+        for(int i = 0;i<n;i++){
+            for(int j = 0;j<m;j++){
+                B[j][i] = A1D[index++];
+            }
+
+        }
+        return B;
+    }
 }

@@ -14,6 +14,25 @@ import java.awt.image.WritableRaster;
  */
 public class CBufferedImageToDoubleArray {
 
+	/**
+	 * Takes image and converts it into matrix. Each row represents colour band,
+	 * each column represents one pixel
+	 * @param image converted image
+	 * @return matrix of pixels
+	 */
+	public static double[][] convertToPixelArray(BufferedImage image) {
+		int numOfPixels = image.getWidth()*image.getHeight();
+		double[] data = image.getData().getPixels(0, 0, image.getWidth(), image.getHeight(), new double[0]);
+		int bands = data.length/numOfPixels;
+		double[][] pixels = new double[numOfPixels][bands];
+
+		for(int i=0; i<data.length; i++) {
+			int band = i%bands;
+			pixels[i/bands][band] = data[i];
+		}
+		return pixels;
+	}
+
 	public static double[][][] convert(BufferedImage image) {
 		Raster raster = image.getData();
 		double[][][] original = new double[image.getWidth()][image.getHeight()][raster.getNumBands()];

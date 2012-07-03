@@ -7,27 +7,14 @@ package utils;
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
 import java.util.Arrays;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Test;
 
 /**
  *
  * @author gimli
  */
 public class CMatrixTest {
-
-	public CMatrixTest() {
-	}
-
-	@BeforeClass
-	public static void setUpClass() throws Exception {
-	}
-
-	@AfterClass
-	public static void tearDownClass() throws Exception {
-	}
 
 	/**
 	 * Test of GEM method, of class CMatrix.
@@ -65,5 +52,22 @@ public class CMatrixTest {
 
 		Arrays.sort(result);
 		assertArrayEquals(expResult, result, 0.001);
+	}
+
+	@Test
+	public void testReshape() {
+		System.out.println("reshape");
+		double[][] A = {{1.0, 2.0, 3.0},{4.0, 5.0, 6.0},{7.0, 8.0, 9.0},{10.0, 11.0, 12.0}};
+		int m = 2;
+		int n = 6;
+		double[][] expResult = {{1.0, 3.0, 5.0, 7.0, 9.0, 11.0},{2.0, 4.0, 6.0, 8.0, 10.0, 12.0}};
+		double[][] result = CMatrix.reshape(A, m, n);
+		assertArrayEquals(expResult, result);
+
+		m = 3;
+		n = 4;
+		expResult = new double[][]{{1.0, 4.0, 7.0, 10.0},{2.0, 5.0, 8.0, 11.0}, {3.0, 6.0, 9.0, 12.0}};
+		result = CMatrix.reshape(A, m, n);
+		assertArrayEquals(expResult, result);
 	}
 }

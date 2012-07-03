@@ -4,6 +4,8 @@
  */
 package image.statiscics;
 
+import java.util.ArrayList;
+
 /**
  * @author gimli
  * @version May 1, 2012
@@ -21,6 +23,8 @@ public class CHistogramND {
 	public double[] min, max;
 	/** histogram bin values */
 	public int[] binContent;
+	/** histograms for each dimension separately */
+	public ArrayList<int[]> histForOneDimension;
 	/** Number of values stored in histogram */
 	public int values;
 	/** Entropy of stored values */
@@ -33,10 +37,12 @@ public class CHistogramND {
 		min = new double[dimensions];
 		max = new double[dimensions];
 		binSize = new double[dimensions];
+		histForOneDimension = new ArrayList<int[]>(dimensions);
 
 		int binsCount = 1;
 		for(int b=0; b<dimensions; b++) {
 			binsCount *= bins[b];
+			histForOneDimension.add(b, new int[bins[b]]);
 		}
 
 		binContent = new int[binsCount];
@@ -68,7 +74,7 @@ public class CHistogramND {
 	/**
 	 * Creates multidimensional histogram
 	 *
-	 * @param inputValues contains in each row one dimension of values, number of
+	 * @param inputValues contains in each column one dimension of values, number of
 	 * rows must correspond with length of bins
 	 * @param bins number of histogram bins in each dimension
 	 * @return created multidimensional histogram
@@ -93,6 +99,7 @@ public class CHistogramND {
 			int[] histValue = new int[out.dimensions];
 			for(int i=0; i<out.dimensions; i++) {
 				histValue[i] = (int)((inputValues[i][v] - out.min[i])/out.binSize[i]);
+				out.histForOneDimension.get(i)[histValue[i]]++;
 			}
 			out.binContent[getBinNumber(histValue, out.bins)]++;
 		}

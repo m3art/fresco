@@ -6,6 +6,10 @@ package workers.analyse.pca;
 
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
+import java.util.LinkedList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import utils.vector.CBasic;
 
 /**
  * Compute Principal Component Analysis from input set of vectors. Vectors are
@@ -13,47 +17,88 @@ import Jama.Matrix;
  *
  * @author gimli
  */
-class CPca {
+public class CPca {
 
-	/** Eigenvalues of covariance matrix of input vector array */
-	private double[] eigenValues;
 	/** Eigenvectors of covariance matrix of input vector array */
 	private double[][] eigenVectors;
 	/** Flag that eigenvectors and eigenvalues are prepared */
 	private boolean dataProcessed = false;
 	/** Vectors for PCA */
-	private final double[][] data;
+	private double[][] data;
 	/** Number of dimensions of vectors */
-	private final int dimensions;
+	private int dimensions;
 
-	/**
-	 * Constructor
-	 * @param vectors input data each column of input matrix represents vector
-	 */
-	public CPca(double[][] vectors) {
-		data = vectors;
-		if (vectors.length == 0) {
-			throw new IllegalArgumentException("Vectors to process cannot be empty field");
-		}
-		dimensions = vectors[0].length;
-	}
+	private final static Logger logger = Logger.getLogger(CPca.class.getName());
 
 	/**
 	 * Time consuming method computes eigenvectors of covariance matrix of
 	 * input image. Vectors are ordered according their eigenvalues and can be
 	 * accessed {@see getEigenVectors} and {@see getEigenValues}
 	 */
-	public void processData() {
-
+	public double[][] pcaTransform(double[][] vectors) {
+		if (vectors.length == 0) {
+			throw new IllegalArgumentException("Vectors to process cannot be empty field");
+		}
+		data = vectors;
+		dimensions = vectors[0].length;
+		// covariance matrix
 		double[][] cov = computeCovarianceMatrix();
-
-		Matrix covariance = new Matrix(cov);
-		EigenvalueDecomposition decomposition = new EigenvalueDecomposition(covariance);
-
-		eigenValues = decomposition.getRealEigenvalues();
-		eigenVectors = decomposition.getV().getArray();
+		// eigenvectors of covariance matrix
+		eigenVectors = computeEigenvectors(cov);
+		// conversion of input vectors into new coordinate system defined by eigenvectors
+		convertData();
 
 		dataProcessed = true;
+		return data;
+	}
+
+	private void convertData() {
+		for(int i=0; i<data.length; i++) {
+			double[] vector = data[i];
+			for(int k=0; k< dimensions; k++) {
+				data[i][k] = CBasic.scalar(eigenVectors[k],vector);
+			}
+		}
+	}
+
+	private static double[][] computeEigenvectors(double[][] covarianceMatrix) {
+		Matrix covariance = new Matrix(covarianceMatrix);
+		EigenvalueDecomposition decomposition = new EigenvalueDecomposition(covariance);
+
+		double[] eigenImaginar = decomposition.getImagEigenvalues();
+		double[] eigenReal = decomposition.getRealEigenvalues();
+		LinkedList<Integer> order = new LinkedList<Integer>();
+
+		int eigenValuesReal = 0;
+
+		for(int i=0; i<eigenImaginar.length; i++) {
+			boolean added = false;
+			if (eigenImaginar[i] == 0) {
+				eigenValuesReal++;
+				for(int index: order){
+					if (eigenReal[index] < eigenReal[i]) {
+						order.add(index, i);
+						added = true;
+						break;
+					}
+				}
+				if (!added) {
+					order.add(i);
+				}
+			} else {
+				logger.log(Level.WARNING, "Complex eigenvalue: {0}", i);
+			}
+		}
+
+		double[][] eigenVector = decomposition.getV().getArray();
+		double[][] out = new double[eigenValuesReal][];
+
+		int i=0;
+		for(int index: order){
+			out[i] = eigenVector[index];
+		}
+
+		return out;
 	}
 
 	/**
@@ -61,11 +106,10 @@ class CPca {
 	 * @return eigenvectors of input data
 	 */
 	public double[][] getEigenVectors() {
+		if (! dataProcessed) {
+			throw new IllegalStateException("Data are not process, call processData before");
+		}
 		return eigenVectors;
-	}
-
-	public double[] getEigenValues() {
-		return eigenValues;
 	}
 
 	private double[][] computeCovarianceMatrix() {
