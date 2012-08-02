@@ -192,6 +192,12 @@ public class CImageContainer {
 		return map.getSegmentAt(x, y).getColor();
 	}
 
+	/**
+	 * Returns currently shown image version.
+	 *
+	 * @param screen defines which transformation will be used. {@see Screen}
+	 * @return transformed image into gray/mean/one of band etc.
+	 */
 	public BufferedImage getTransformedImage(Screen screen) {
 		switch (screen) {
 			case ORIGINAL:

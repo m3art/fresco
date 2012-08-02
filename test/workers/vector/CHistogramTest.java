@@ -4,7 +4,7 @@
  */
 package workers.vector;
 
-import image.statiscics.CHistogram;
+import image.statistics.CHistogram;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;

@@ -2,11 +2,10 @@
  * Part of Fresco software under GPL licence
  * http://www.gnu.org/licenses/gpl-3.0.txt
  */
-package image.statiscics;
+package image.statistics;
 
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.io.IOException;
 import java.util.logging.Level;
@@ -32,9 +31,9 @@ public class CVariationOfInformation {
 	 * @param input2
 	 * @throws java.io.IOException if the size of image not correspond
 	 */
-	public CVariationOfInformation(final BufferedImage input1, final BufferedImage input2) {
-		in1 = input1.getData();
-		in2 = input2.getData();
+	public CVariationOfInformation(final Raster input1, final Raster input2) {
+		in1 = input1;
+		in2 = input2;
 		numOfPixels = in1.getWidth() * in2.getHeight();
 	}
 
@@ -76,7 +75,7 @@ public class CVariationOfInformation {
 		Hxy += entropyGain(histXY[pixel1[colorBand]][pixel2[colorBand2]]);
 		Hy += entropyGain(histY[pixel2[colorBand2]]);
 
-		return -Hx - Hy + 2 * Hxy;
+		return Hx + Hy - 2 * Hxy;
 	}
 
 	public double MIOnRects(Rectangle rect1, Rectangle rect2) {
@@ -104,7 +103,7 @@ public class CVariationOfInformation {
 	 */
 	private double entropyGain(double value) {
 		if (value == 0) {
-			logger.fine("Bug stayed");
+			return 0;
 		}
 		double prst = value / (double) numOfPixels;
 		if (prst > 1) {

@@ -76,6 +76,8 @@ public abstract class CImageWorker<T, V> extends SwingWorker<T, V> implements II
 				return new CPerspectiveTransformationWorker(CData.getImage(CData.showImage[0]), CData.getImage(CData.showImage[2]));
 			case patternAnalyzer:
 				return new CPatternAnalyzer(CData.getImage(CData.showImage[0]), CData.getImage(CData.showImage[2]));
+			case colorBlend:
+				return new CColorBlendWorker();
 			case ahe:
 				return new CAdaptiveHistogramEnhancing(CData.getImage(CData.showImage[0]).getImage());
 			case colorShift:

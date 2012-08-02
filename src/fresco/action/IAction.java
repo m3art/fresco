@@ -39,6 +39,7 @@ public interface IAction {
 		alphaBlend,
 		oneInput,
 		// analysis
+		colorBlend,
 		sobel,
 		laplace,
 		wavelets,

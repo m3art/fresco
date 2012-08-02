@@ -1,5 +1,5 @@
 
-import image.statiscics.CHistogramND;
+import image.statistics.CHistogramND;
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 

@@ -10,7 +10,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.util.concurrent.CancellationException;
 import java.util.logging.Logger;
-import image.statiscics.CHistogram;
+import image.statistics.CHistogram;
 import info.clearthought.layout.TableLayout;
 import java.awt.BorderLayout;
 import java.awt.Dimension;

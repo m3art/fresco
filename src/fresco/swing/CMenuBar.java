@@ -31,7 +31,7 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 	// edit menu items
 	CMenuItem fixImage, fixSegments, rename, capture;
 	// analysis items
-	CMenuItem diff, sobel, laplacian, wavelets, mutualInfo, pca, patternAnalysis;
+	CMenuItem diff, sobel, laplacian, wavelets, mutualInfo, pca, patternAnalysis, colorBlend;
 	// correction items
 	CMenuItem ahe, colorShift;
 	// transform items
@@ -207,6 +207,10 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 		patternAnalysis = new CMenuItem("Pattern analysis", RegID.patternAnalyzer);
 		patternAnalysis.addActionListener(CData.userActionListener);
 		analysisMenu.add(patternAnalysis);
+
+		colorBlend = new CMenuItem("Color blending", RegID.colorBlend);
+		colorBlend.addActionListener(CData.userActionListener);
+		analysisMenu.add(colorBlend);
 	}
 
 	public void checkEnabled() {
@@ -257,6 +261,7 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 			diff.setEnabled(true);
 			mutualInfo.setEnabled(true);
 			patternAnalysis.setEnabled(true);
+			colorBlend.setEnabled(true);
 			registrationMarkSelector.setEnabled(true);
 			if (CData.getImage(CData.showImage[0]).getNumOfMarks() == CData.getImage(CData.showImage[2]).getNumOfMarks())
 				regQuality.setEnabled(true);
@@ -266,6 +271,7 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 			diff.setEnabled(false);
 			mutualInfo.setEnabled(false);
 			patternAnalysis.setEnabled(false);
+			colorBlend.setEnabled(false);
 			registrationMarkSelector.setEnabled(false);
 			regQuality.setEnabled(false);
 		}

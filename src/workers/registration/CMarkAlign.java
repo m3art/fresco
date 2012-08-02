@@ -12,7 +12,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.io.IOException;
 import java.util.LinkedList;
-import image.statiscics.CVariationOfInformation;
+import image.statistics.CVariationOfInformation;
 import utils.vector.CBasic;
 
 /**
@@ -46,7 +46,7 @@ public class CMarkAlign {
 		Point mark1, mark2;
 		Dimension start, end;
 
-		worker = new CVariationOfInformation((new Crgb2hsv()).convert(input1), (new Crgb2hsv()).convert(input2));
+		worker = new CVariationOfInformation((new Crgb2hsv()).convert(input1).getData(), (new Crgb2hsv()).convert(input2).getData());
 
 		for (i = 0; i < marks2.size(); i++) {
 			aligned = false;

@@ -5,7 +5,7 @@
 package workers.analyse;
 
 import image.converters.CBufferedImageToDoubleArray;
-import image.statiscics.CHistogramND;
+import image.statistics.CHistogramND;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import workers.analyse.pca.CPca;

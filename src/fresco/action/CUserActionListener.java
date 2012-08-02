@@ -138,6 +138,7 @@ public class CUserActionListener implements ActionListener, ItemListener {
 					CData.setTool(Tool.regMarker);
 					logger.log(Level.INFO, "New tool selected: {0}", CData.getTool().name());
 					break;
+				case colorBlend:
 				case sobel:
 				case rotateLeft:
 				case rotateRight:
