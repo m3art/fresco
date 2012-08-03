@@ -4,8 +4,8 @@
  */
 package utils.metrics;
 
-import image.statiscics.CHistogram;
-import image.statiscics.CHistogramND;
+import image.statistics.CHistogram;
+import image.statistics.CHistogramND;
 import java.awt.image.BufferedImage;
 import java.util.logging.Level;
 import java.util.logging.Logger;

@@ -4,6 +4,7 @@
  */
 package image.statiscics;
 
+import image.statistics.CHistogramND;
 import org.junit.Test;
 import static org.junit.Assert.*;
 

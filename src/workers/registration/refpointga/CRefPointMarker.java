@@ -7,7 +7,7 @@ package workers.registration.refpointga;
 import fresco.swing.CWorkerDialogFactory;
 import image.CBinaryImage;
 import image.converters.Crgb2grey;
-import image.statiscics.CHistogram;
+import image.statistics.CHistogram;
 import info.clearthought.layout.TableLayout;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;

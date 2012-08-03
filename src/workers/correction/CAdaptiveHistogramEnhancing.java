@@ -7,7 +7,7 @@ package workers.correction;
 import fresco.swing.CWorkerDialogFactory;
 import image.converters.CBufferedImageToDoubleArray;
 import image.converters.Crgb2hsv;
-import image.statiscics.CHistogram;
+import image.statistics.CHistogram;
 import info.clearthought.layout.TableLayout;
 import java.awt.BorderLayout;
 import java.awt.Dimension;

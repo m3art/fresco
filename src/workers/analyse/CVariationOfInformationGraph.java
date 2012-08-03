@@ -12,7 +12,7 @@ import java.awt.image.WritableRaster;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import image.statiscics.CVariationOfInformation;
+import image.statistics.CVariationOfInformation;
 
 /**
  * Mutual information is computed over two gray scale images. Mutual information
@@ -30,8 +30,8 @@ public class CVariationOfInformationGraph extends CAnalysisWorker {
 	private static final Logger logger = Logger.getLogger(CVariationOfInformationGraph.class.getName());
 
 	public CVariationOfInformationGraph(BufferedImage imageA, BufferedImage imageB) {
-		this.imageA = /*imageA; /*/ (new Crgb2grey()).convert(imageA);
-		this.imageB = /*imageB; /*/ (new Crgb2grey()).convert(imageB);
+		this.imageA = imageA;
+		this.imageB = imageB;
 	}
 
 	/**
@@ -41,21 +41,22 @@ public class CVariationOfInformationGraph extends CAnalysisWorker {
 	@Override
 	protected BufferedImage doInBackground() {
 		try {
-			CVariationOfInformation mi = new CVariationOfInformation(imageA, imageB);
+			Raster rasterA, rasterB;
+
+			rasterA = (new Crgb2grey()).convert(imageA).getData();
+			rasterB = (new Crgb2grey()).convert(imageB).getData();
+			CVariationOfInformation mi = new CVariationOfInformation(rasterA, rasterB);
 
 			logger.log(Level.INFO, "{0} started", getWorkerName());
 			mi.init();
 			setProgress(33);
 
-			Raster rasterA, rasterB;
 			BufferedImage output = new BufferedImage(imageA.getWidth(), imageA.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
 			double[][] miValues = new double[imageA.getWidth()][imageA.getHeight()];
 			WritableRaster out = output.getRaster();
 			int[] miValue = new int[3];
 			double max = Double.MIN_VALUE, min = Double.MAX_VALUE;
 
-			rasterA = imageA.getData();
-			rasterB = imageB.getData();
 
 			int[] pixelA = new int[rasterA.getNumBands()], pixelB = new int[rasterB.getNumBands()];
 
@@ -77,14 +78,14 @@ public class CVariationOfInformationGraph extends CAnalysisWorker {
 				}
 			}
 
-			logger.log(Level.INFO, "Mutual information range: [{0}, {1}]", new Object[]{min, max});
+			logger.log(Level.INFO, "Variation of information range: [{0}, {1}]", new Object[]{min, max});
 
 			for (int x = 0; x < imageA.getWidth(); x++) {
 				for (int y = 0; y < imageB.getHeight(); y++) {
 					miValue[1] =
-							miValue[2] = 255;
+							miValue[2] = //255;
 					miValue[0] = (int) ((miValues[x][y] - min) / (max - min) * 255);
-					miValue = Crgb2hsv.inverse(miValue);
+					//miValue = Crgb2hsv.inverse(miValue);
 					out.setPixel(x, y, miValue);
 					setProgress(66 + (x * imageA.getHeight() + y) * 33 / (imageA.getWidth() * imageA.getHeight()));
 				}

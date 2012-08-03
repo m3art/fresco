@@ -12,7 +12,7 @@ import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.util.Iterator;
 import java.util.LinkedList;
-import image.statiscics.CHistogram;
+import image.statistics.CHistogram;
 
 /**
  * Class for recursive segmentation method based on spliting
