@@ -11,6 +11,7 @@ import javax.swing.JDialog;
 import javax.swing.SwingWorker;
 import support.regmarks.CPointPairsOverview;
 import workers.analyse.*;
+import workers.analyse.pca.CPcaConverter;
 import workers.correction.CAdaptiveHistogramEnhancing;
 import workers.correction.colorshift.CColorShiftWorker;
 import workers.registration.CPerspectiveTransformationWorker;
@@ -54,6 +55,8 @@ public abstract class CImageWorker<T, V> extends SwingWorker<T, V> implements II
 	 */
 	public static CImageWorker createWorker(RegID id, Object[] params) {
 		switch (id) {
+			case pca:
+				return new CPcaConverter(CData.getImage(CData.showImage[0]).getImage());
 			case laplace:
 				return new CLaplacian(CData.getImage(CData.showImage[0]).getImage());
 			case sobel:

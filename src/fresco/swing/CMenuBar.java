@@ -224,6 +224,7 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 			segmentationMenu.setEnabled(false);
 			hueQuantization.setEnabled(false);
 			ahe.setEnabled(false);
+			pca.setEnabled(false);
 		} else {
 			save.setEnabled(true);
 			imageInfo.setEnabled(true);
@@ -237,6 +238,7 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 			segmentationMenu.setEnabled(true);
 			hueQuantization.setEnabled(true);
 			ahe.setEnabled(true);
+			pca.setEnabled(true);
 		}
 
 		if (CData.output == null) {

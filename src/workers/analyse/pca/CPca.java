@@ -95,7 +95,7 @@ public class CPca {
 
 		int i=0;
 		for(int index: order){
-			out[i] = eigenVector[index];
+			out[i++] = eigenVector[index];
 		}
 
 		return out;

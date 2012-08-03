@@ -22,7 +22,8 @@ public class CBufferedImageToDoubleArray {
 	 */
 	public static double[][] convertToPixelArray(BufferedImage image) {
 		int numOfPixels = image.getWidth()*image.getHeight();
-		double[] data = image.getData().getPixels(0, 0, image.getWidth(), image.getHeight(), new double[0]);
+		Raster raster = image.getData();
+		double[] data = raster.getPixels(0, 0, image.getWidth(), image.getHeight(), new double[image.getWidth()*image.getHeight()*raster.getNumBands()]);
 		int bands = data.length/numOfPixels;
 		double[][] pixels = new double[numOfPixels][bands];
 
@@ -55,6 +56,20 @@ public class CBufferedImageToDoubleArray {
 			}
 		}
 		output.setData(raster);
+		return output;
+	}
+
+	public static BufferedImage inverseFromPixelArray(double[][] pixels, int width, int height) {
+		assert(width*height == pixels.length);
+
+		BufferedImage output = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		WritableRaster raster = output.getRaster();
+
+		for(int x=0; x<width; x++)
+			for(int y=0; y<height; y++) {
+				raster.setPixel(x, y, pixels[x*height+y]);
+			}
+
 		return output;
 	}
 }

@@ -154,6 +154,7 @@ public class CUserActionListener implements ActionListener, ItemListener {
 				case laplace:
 				case registrationMarkSearch:
 				case registrationMarksQuality:
+				case pca:
 					manager.runImageWorker(id, null);
 					break;
 			}
