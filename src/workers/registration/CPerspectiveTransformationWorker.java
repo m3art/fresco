@@ -5,6 +5,7 @@
 package workers.registration;
 
 import fresco.CImageContainer;
+import image.colour.CBilinearInterpolation;
 import java.awt.Point;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
@@ -47,7 +48,8 @@ public class CPerspectiveTransformationWorker extends CRegistrationWorker {
 		WritableRaster out = output.getRaster();
 		Raster in = original.getData();
 		int x, y;
-		int[] pixel = new int[3], black = {0, 0, 0};
+		double[] pixel;
+		double[] black = {0, 0, 0};
 		Point2D.Double ref;
 
 		if (patternMarks.size() > 3 && transformMarks.size() > 3) {
@@ -66,9 +68,9 @@ public class CPerspectiveTransformationWorker extends CRegistrationWorker {
 		for (x = 0; x < size.x; x++) {
 			for (y = 0; y < size.y; y++) {
 				ref = trans.getProjected(new Point2D.Double(x, y));
-				if (ref.x < original.getWidth() && ref.x >= 0
-						&& ref.y < original.getHeight() && ref.y >= 0) {
-					in.getPixel((int) ref.x, (int) ref.y, pixel);
+				if (ref.x <= original.getWidth()-1 && ref.x >= 0
+						&& ref.y <= original.getHeight()-1 && ref.y >= 0) {
+					pixel = CBilinearInterpolation.getValue(ref, in);
 				} else {
 					pixel = black;
 				}
