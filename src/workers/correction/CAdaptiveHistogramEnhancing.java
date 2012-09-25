@@ -16,6 +16,8 @@ import java.awt.image.BufferedImage;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 /**
  * This class enhance the input image contrast. Image is splited to regions of
@@ -42,6 +44,7 @@ public class CAdaptiveHistogramEnhancing extends CCorrectionWorker {
 	private double[][][] pixels;
 	private static final Logger logger = Logger.getLogger(CAdaptiveHistogramEnhancing.class.getName());
 	boolean rgb;
+	private int HISTOGRAM_BINS = 256;
 
 	public CAdaptiveHistogramEnhancing(BufferedImage image) {
 		this.image = image;
@@ -65,6 +68,8 @@ public class CAdaptiveHistogramEnhancing extends CCorrectionWorker {
 			pixels = Crgb2hsv.convertImageToDouble(image);
 			logger.log(Level.FINE, "Image to double array conversion: {0}", (System.currentTimeMillis()-start));
 			start = System.currentTimeMillis();
+		} else {
+			pixels = CBufferedImageToDoubleArray.convert(image);
 		}
 
 		width = image.getWidth();
@@ -138,7 +143,6 @@ public class CAdaptiveHistogramEnhancing extends CCorrectionWorker {
 					}
 					if (neighs != 0) {
 						pixels[x][y][band] = out[x][y] / neighs;
-						Math.max(0,Math.min(pixels[x][y][band],255));
 					} else {
 						pixels[x][y][band] = 0;
 					}
@@ -166,7 +170,7 @@ public class CAdaptiveHistogramEnhancing extends CCorrectionWorker {
 		int[] outRegion;
 		// check if it is necessary to set the region
 		if (minX >= width || minY >= height || minX < 0 || minY < 0) {
-			logger.warning("Left top corner of region is out of image bounds");
+			logger.finer("Region out of bounds skipped");
 			return null;
 		} else {
 			// set region boundaries
@@ -198,7 +202,7 @@ public class CAdaptiveHistogramEnhancing extends CCorrectionWorker {
 
 	private int[] developHistogram(int[] region) {
 		int[] hist;
-		hist = CHistogram.oneBandHistogram(region, 256);
+		hist = CHistogram.oneBandHistogram(region, HISTOGRAM_BINS);
 		hist = normalizeHistogram(hist);
 
 		return hist;
@@ -225,11 +229,19 @@ public class CAdaptiveHistogramEnhancing extends CCorrectionWorker {
 
 		logger.log(Level.FINE, "Residuum: {0}", residuum/hist.length);
 
-		if (sum - min != 0) {
-			for (i = 0; i < hist.length; i++) {
-				hist[i] = (int) Math.round((hist[i] - min) * 255 / sum);
+
+		int max = hist[HISTOGRAM_BINS-1] + residuum;
+
+		for (i = 0; i < HISTOGRAM_BINS; i++) {
+			if (hist[i] != 0) {
+				hist[i] = (int) Math.round(hist[i] - min + residuum * i / HISTOGRAM_BINS);
+			} else {
+				hist[i] = residuum * i / HISTOGRAM_BINS;
 			}
+			hist[i] *= 255;
+			hist[i] /= max;
 		}
+
 
 
 		return hist;
@@ -241,7 +253,7 @@ public class CAdaptiveHistogramEnhancing extends CCorrectionWorker {
 	}
 
 	JTextField regSize;
-	JSlider effect = new JSlider(JSlider.HORIZONTAL, 3, 20, 4);
+	JSlider effect = new JSlider(JSlider.HORIZONTAL, 0, 100, 10);
 
 	/**
 	 * Evaluate values set by user. Default Worker does not support user input.
@@ -252,7 +264,7 @@ public class CAdaptiveHistogramEnhancing extends CCorrectionWorker {
 	public boolean confirmDialog() {
 		try {
 			this.regionSize = Integer.valueOf(regSize.getText());
-			this.histCut = effect.getValue();
+			this.histCut = image.getWidth() * image.getHeight() * effect.getValue() / 100 / HISTOGRAM_BINS;
 			return true;
 		} catch (NumberFormatException nfe) {
 			logger.warning("Input value for region size is not a valid integer.");
@@ -273,6 +285,13 @@ public class CAdaptiveHistogramEnhancing extends CCorrectionWorker {
 		JLabel regSizeLabel = new JLabel("Region size:", SwingConstants.RIGHT);
 		regSize = new JTextField(Integer.toString((int)(Math.sqrt(image.getWidth()*image.getHeight())/4)),6);
 		JLabel effectLabel = new JLabel("Effect:", SwingConstants.RIGHT);
+
+		effect.addChangeListener(new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				effect.setToolTipText(effect.getValue()+"%");
+			}
+		});
 
 		TableLayout layout = new TableLayout(new double[]{5, TableLayout.FILL, 5, TableLayout.FILL, 5},new double[]{5, TableLayout.FILL, 5, TableLayout.FILL, 5});
 
