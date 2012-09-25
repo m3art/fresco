@@ -238,7 +238,7 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 			rotateRight.setEnabled(true);
 			segmentationMenu.setEnabled(true);
 		}
-    if (CData.showImage[0] != -1) { 
+    if ((CData.showImage[0] != -1) && (CData.showImage[2] != -1)) { 
       intPoints.setEnabled(true);
     }
     else {
