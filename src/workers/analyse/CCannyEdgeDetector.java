@@ -9,7 +9,9 @@ import info.clearthought.layout.TableLayout;
 import workers.segmentation.*;
 import java.awt.image.*;
 import java.awt.*;
+import java.util.logging.Logger;
 import javax.swing.*;
+import workers.CImageWorker;
 
 /**
  * Colour implementation of canny edge detector.
@@ -35,7 +37,7 @@ public class CCannyEdgeDetector extends CAnalysisWorker {
 	 * made.
 	 */
 	private double lowThreshold = 0.3f, highThreshold = 0.7f;
-
+  private static final Logger logger = Logger.getLogger(CImageWorker.class.getName());
 	/**
 	 * Basic nonparametric usage of canny edge detector. No thresholding is used.
 	 * @param original input image
@@ -84,13 +86,27 @@ public class CCannyEdgeDetector extends CAnalysisWorker {
 
 					for (b = 0; b < bands; b++) {
 						sum[b] = Math.abs(sum_x[b]) + Math.abs(sum_y[b]);
-					}
+            sum[b] /= 6;				}
 				}
+        boolean a = false;
+        /*if (sum[1] > 200) {
+           logger.info("once again...: "+sum[1]+" at "+x+" "+y);
+           a = true;
+        }*/
+        
 				raster.setPixel(x, y, sum);
+        if (a) {
+          double test[] = new double[3];
+          raster.getPixel(x, y, test);
+          logger.info("reduced to: "+test[1]);
+          a = false;
+        }
+        
 				setProgress(100 * (x * ((int) size.getHeight()) + y) / ((int) (size.getWidth() * size.getHeight())));
 			}
 		}
 		image.setData(raster);
+    
 		return image;
 	}
 

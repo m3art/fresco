@@ -1,6 +1,6 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+ * Part of Fresco software under GPL licence
+ * http://www.gnu.org/licenses/gpl-3.0.txt
  */
 package workers.registration;
 
@@ -13,10 +13,6 @@ import java.awt.geom.Point2D;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-/**
- *
- * @author gimli
- */
 public class CPointsAndQualities {
   
 
@@ -47,6 +43,12 @@ public class CPointsAndQualities {
 	public Double getQuality(int i) {
 		return qualities.get(i);
 	}
+  
+  public void removePtq(int i) {
+    if (i > size()) i = size();
+    points.remove(i);
+    qualities.remove(i);
+  }
 
 
 	public void addPoint(Point2D.Double pt, Double q) {
@@ -54,15 +56,7 @@ public class CPointsAndQualities {
 		qualities.add(q);
 	}
 
-	/**
-	 * Test for content of PointPairs. If projected is not set (null value) only
-	 * origin is searched, otherwise projection of origin must correspond to
-	 * projected.
-	 *
-	 * @param origin searched point in point pairs
-	 * @param projected optional corresponding point
-	 * @return true if origin/pair is in point set
-	 */
+	
 	public boolean contains(Point2D.Double input) {
 		Iterator<Point2D.Double> itPts = this.points.iterator();
 		while (itPts.hasNext()) {

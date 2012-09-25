@@ -289,7 +289,7 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 				&& CData.getImage(CData.showImage[2]).getNumOfMarks() >= 4) {
 			perspectiveTrans.setEnabled(true);
 		} else {
-			perspectiveTrans.setEnabled(false);
+			perspectiveTrans.setEnabled(true);
 		}
 	}
 
