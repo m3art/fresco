@@ -242,7 +242,7 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
       intPoints.setEnabled(true);
     }
     else {
-      intPoints.setEnabled(false);
+      intPoints.setEnabled(true);
     }
 
 		if (CData.output == null) {

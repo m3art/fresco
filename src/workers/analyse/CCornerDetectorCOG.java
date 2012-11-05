@@ -36,9 +36,8 @@ public class CCornerDetectorCOG {
     
     double COGx = 0;
     double COGy = 0;
-    int shift = 0;
     double val = 0;
-    shift = (int)(size/2);
+    int shift = (int)(size/2);
     int xdim, ydim, iD, jD;
     //i, j are coordinates in input square subimage
     
@@ -90,7 +89,7 @@ public class CCornerDetectorCOG {
         COGcx -= COGx;
       }
       int chkAX = (int)Math.round(COGcy+shift);
-      int chkAY = (int)Math.round((-1*(COGcx))+shift);
+      int chkAY = (int)Math.round(((-1)*(COGcx))+shift);
     
       double valA = (double)input[(chkAY*size)+chkAX]/scale;
       
@@ -121,7 +120,8 @@ public class CCornerDetectorCOG {
     
      double [] ret = new double[5];
      
-     ret[0] = Math.pow(dist*perpC, 1-(centerWhiteness/CWI))*whiteDiff;
+     //ret[0] = Math.pow(dist*perpC, 1-(centerWhiteness/CWI))*whiteDiff;
+     ret[0] = dist*perpC*centerWhiteness*centerWhiteness;
      ret[1] = centerWhiteness;
      ret[2] = dist;
      ret[3] = whiteDiff;

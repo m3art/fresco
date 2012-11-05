@@ -34,7 +34,10 @@ import workers.registration.refpointga.CPointAndTransformation;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Arrays;
+import javax.imageio.ImageTypeSpecifier;
 import utils.metrics.*;
+import workers.analyse.CHarris;
+import workers.analyse.CLaplacian;
 
 
 
@@ -42,39 +45,70 @@ import utils.metrics.*;
  *
  * @author Jakub
  * 
- * 
- * 
  * TODO
  * 
  * eliminovat parametry
  * zkusit benchmarky - vyrobit data a najit slaby mista. * 
  * (umoznit uzivateli dodat body a predelat transformaci).
  * 
+ * 
+ * regularizzace (n bodu v obdelnikach (nad prahem)])
+ * RANSAC na transformaci
+ * evaluace podle
+ *  -chyby transformace
+ *  -CC vybranych dvojic
+ * 
+ * nahradit haldovy vyber dvojic backtrackingem podle transformace,
+ * tj. backtrackuj, pokud bod je v dosud spoctene tansformaci nerealny
+ * 
+ * 
+ * TESTY
+ * 
+ * priste: konec rijna / zacatek listopadu
+ * 
+ * 
  */
 
-public class CInterestingPoints extends CSupportWorker<CPointPairs, CPointAndTransformation[]> {
+//public class CInterestingPoints extends CImageWorker<Double, Void> {
+public class CInterestingPoints extends CSupportWorker<Double, Void> {
   private static final Logger logger = Logger.getLogger(CImageWorker.class.getName());
-  public static int topPts = 200; //TODO parametrize
+  public static int topPts = 160; //TODO parametrize
   private BufferedImage imageA, imageB;
   private CPointPairs pairsOut;
   private CPointsAndQualities ptqA, ptqB;
   private int[] black;
   private int[] white;  
   private int windowSize;
+  private int shift;
+  private boolean harris;
+  
+  
+  
+  @Override
+	public Type getType() {
+		return Type.SUPPORT;
+	}
 
+	public String getTypeName() {
+		return "SUPPORT";
+	}
+
+
+  
   @Override
   public String getWorkerName() {
     return "Interesting points search worker";
   }
 
-  public CInterestingPoints(BufferedImage one, BufferedImage two) {
+  public CInterestingPoints(BufferedImage one, BufferedImage two, boolean harris) {
     this.imageA = one;
     this.imageB = two;
     this.ptqA = new CPointsAndQualities();
     this.ptqB = new CPointsAndQualities();
     this.pairsOut = new CPointPairs();
     
-    this.windowSize = 3;
+    this.windowSize = 7;
+    this.shift = 0;
     this.black = new int[3];
     this.black[0] = 0;
     this.black[1] = 0;
@@ -83,49 +117,42 @@ public class CInterestingPoints extends CSupportWorker<CPointPairs, CPointAndTra
     this.white[0] = 255;
     this.white[1] = 255;
     this.white[2] = 255;
+    this.harris = harris;
+    //logger.info("created new CIP");
+    
     
   }
   
-  private CPointsAndQualities getPoints(BufferedImage input) {
-    
-    /* Get edge detector output, greyscale it */
+  public BufferedImage getEdgedGreyscale(BufferedImage input) {
     
     BufferedImage edgedImage = null;
-    // = new BufferedImage(input.getWidth(), input.getHeight(), BufferedImage.TYPE_INT_RGB);
-    BufferedImage greyscale = (new Crgb2grey()).oneBandImage(input);
-    
-    CPointsAndQualities tmpPts = new CPointsAndQualities();
-    CPointsAndQualities retPts = new CPointsAndQualities();
+    BufferedImage greyscale = null;
     CCannyEdgeDetector edgeMaker  = new CCannyEdgeDetector(input, 0.1f, 0.9f);
+    CLaplacian LoG = new CLaplacian(input);
     try {
       edgeMaker.execute();
-      //edgedImage = new BufferedImage(input.getWidth(), input.getHeight(), BufferedImage.TYPE_INT_RGB);
-      edgedImage = (BufferedImage) edgeMaker.get();
+      edgedImage = edgeMaker.get();
+      
+      //edgeMaker.execute();
+      //edgedImage = (BufferedImage) edgeMaker.get();
     } catch (Exception e) {
       JOptionPane.showMessageDialog(new JFrame(), "Exception in image edges\n", "Interesting points stopped", JOptionPane.WARNING_MESSAGE); 
     }
+    greyscale = (new Crgb2grey()).convert(edgedImage);
+    return greyscale;
+  
+  }
+  
+  public int getBestWindowSize(Raster greyInput, int testFields, int lowerBound, int upperBound) {
+    int bestSize = lowerBound;
+    double bestMeasure = 0.0;
     
-    //BufferedImage greyscaleEdged = (new Crgb2grey()).oneBandImage(edgedImage);
-    Raster in1 = CNormalization.normalize((new Crgb2grey()).convert(edgedImage), 128, 64).getData();
-    BufferedImage output = new BufferedImage(input.getWidth(), input.getHeight(), BufferedImage.TYPE_INT_RGB);
-    WritableRaster out = output.getRaster();
-    
-    
-    //actual corner detection
-    
-    /* ENTROPY TEST BEGINS */
-    int bestSize = 3;
-    double bestMeasure = 0;
-    
-    for(int i = 3; i < 21; i += 2) {
+    for(int i = lowerBound; i < upperBound; i += 2) {
       
-      // number of test fields 
-
-      int testFields = 50;      
       double testFieldEntropy = 0;
       double entropySum = 0;
       double measure = 0;
-      int [] pixel = new int[1];
+      int [] pixel = new int[3];
       int [] colorFrequencies = new int[256];
       
       for(int t = 0; t < testFields; t++) {
@@ -136,14 +163,14 @@ public class CInterestingPoints extends CSupportWorker<CPointPairs, CPointAndTra
           colorFrequencies[color] = 0;
         }
         // get test field 
-        int x = (int)(Math.random()*(input.getWidth()-i-1));
-        int y = (int)(Math.random()*(input.getHeight()-i-1));
+        int x = (int)(Math.random()*(greyInput.getWidth()-i-1));
+        int y = (int)(Math.random()*(greyInput.getHeight()-i-1));
         
         
         //fill out frequencies of colors (intensities on grey scale)
         for (int px = x; px < x+i; px++) {
           for (int py = y; py < y + i; py++) {
-            greyscale.getData().getPixel(px, py, pixel);
+            greyInput.getPixel(px, py, pixel);
             colorFrequencies[pixel[0]]++;           
           }
         }
@@ -155,14 +182,12 @@ public class CInterestingPoints extends CSupportWorker<CPointPairs, CPointAndTra
           }
         }
         entropySum += testFieldEntropy;
-        
-        
       }
       //execution time is a factor, and entropy will hit a plateau sooner or later
       // -> add size of field as a negative factor
       
       measure = ((entropySum/(double)testFields)-((double)i/38));
-      logger.info("size:" + i + " measure: " + measure + " entropy: "+entropySum/(double)testFields);
+      //logger.info("size:" + i + " measure: " + measure + " entropy: "+entropySum/(double)testFields);
       //search for best window size
       if (measure >= bestMeasure) { 
         bestMeasure = measure;
@@ -171,88 +196,293 @@ public class CInterestingPoints extends CSupportWorker<CPointPairs, CPointAndTra
 
     }
     logger.info("bestSize: " + bestSize);
-     /* VARIANCE TEST ENDS    */
-    
-    
-    /* CORNER DETECTION */
-    
-    //initialize helper variables
+    return bestSize;
+  }
+  
+  public WritableRaster getCornerity(Raster input) {
     int [] current = null;
     int [] newpx = new int[3];
+    int [] centerpx = new int[3];
+    int [] testpx = new int[3];
     double intensity = 0;
     double [] retval = new double[5];
-    windowSize += bestSize/2;
     
-    CCornerDetectorCOG CornerDetector = new CCornerDetectorCOG(bestSize);
-    int shift = (int)(CCornerDetectorCOG.size/2);
+    BufferedImage output = new BufferedImage(input.getWidth(), input.getHeight(), BufferedImage.TYPE_INT_RGB);
+    WritableRaster out = output.getRaster();
     
-    for (int x = 0; x < in1.getWidth()-CCornerDetectorCOG.size; x++) {
-      for (int y = 0; y < in1.getHeight()-CCornerDetectorCOG.size; y++) {
+    CCornerDetectorCOG  CornerDetector = new CCornerDetectorCOG(windowSize);
+    
+    //int shift = (int)(CCornerDetectorCOG.size/2);
+    
+    for (int x = 0; x < input.getWidth()-windowSize; x++) {
+      for (int y = 0; y < input.getHeight()-windowSize; y++) {
+        input.getPixel(x+shift, y+shift, newpx);
+        //logger.info("found: " + newpx[0]);
         //get square from image
-        current = in1.getSamples(x, y, CCornerDetectorCOG.size, CCornerDetectorCOG.size, 0, current);
+        current = input.getSamples(x, y, windowSize, windowSize, 0, current);
         //get it's "cornerity"
         retval = CornerDetector.getCOG(current, false);
         // save
-        intensity = retval[0];
+        
         //set newpx to grey accordingly
-        newpx[0] = newpx[1] = newpx[2] = (int)(intensity * 256);
+        newpx[0] = newpx[1] = newpx[2] = (int)(retval[0]*256);
+        //newpx[0] = (int)(retval[1] * 256);
+        //newpx[1] = (int)(retval[2] * 256);
+        //newpx[2] = (int)(retval[3] * 256);
         //set pixel in output to "cornerity"
-        out.setPixel(x+shift, y+shift, newpx);
+        //if (newpx[0] > 48)  
+          out.setPixel(x+shift, y+shift, newpx);
+        //else out.setPixel(x+shift, y+shift, black);
+        
         //update progress
-        setProgress(100 * (x * ((int) in1.getHeight()) + y) / ((int) (in1.getWidth() * in1.getHeight())));
+        setProgress(100 * (x * ((int) input.getHeight()) + y) / ((int) (input.getWidth() * input.getHeight())));
       }
     }
-    
-    //normalization
+    int locmaxdim = 3;
+    for (int i = locmaxdim; i < input.getWidth()-locmaxdim; i++) {
+      for (int j = locmaxdim; j < input.getHeight()-locmaxdim; j++) {
+        centerpx = out.getPixel(i, j, centerpx);
+        //boolean isMax = true;
+        for(int is = -locmaxdim; is <= locmaxdim; is++) {
+          for(int js = -locmaxdim; js <= locmaxdim; js++) {
+            if ((is == 0) && (js == 0)) continue;
+            testpx = out.getPixel(i+is, j+js, testpx);
+            if (testpx[0] > centerpx[0]) {
+              centerpx[1] = centerpx[2] = 0;
+              out.setPixel(i, j, centerpx);
+            }
+          }
+        }
+        //if (H[i*w+j] > (maxH/120)) H[i*w+j] = maxH; 
+       
+      }
+    }
+    for (int x = 0; x < input.getWidth()-windowSize; x++) {
+      for (int y = 0; y < input.getHeight()-windowSize; y++) {
+        centerpx = out.getPixel(x, y, centerpx);
+        if (centerpx[1] == 0) centerpx[0] = 0;
+        out.setPixel(x, y, centerpx);
+      }
+    }
+   
     double maxIntensity = 0;
     int [] px = new int[3];
-    for (int a = 0; a < in1.getWidth()-CCornerDetectorCOG.size; a++) {
-      for (int b = 0; b < in1.getHeight()-CCornerDetectorCOG.size; b++) {
+    for (int a = 0; a < input.getWidth()-windowSize; a++) {
+      for (int b = 0; b < input.getHeight()-windowSize; b++) {
         out.getPixel(a+shift, b+shift, px);
         if (px[0]> maxIntensity) maxIntensity = px[0];
       }
     }
-    double q = 256/maxIntensity;
+    double q = 255/maxIntensity;
     int newint = 0;
     newpx[1] = 0;
     newpx[2] = 0;
-    for (int a = 0; a < in1.getWidth()-CCornerDetectorCOG.size; a++) {
-      for (int b = 0; b < in1.getHeight()-CCornerDetectorCOG.size; b++) {
+    for (int a = 0; a < input.getWidth()-windowSize; a++) {
+      for (int b = 0; b < input.getHeight()-windowSize; b++) {
         out.getPixel(a+shift, b+shift, px);
         intensity = px[0];
-        newint = (int)(q*intensity)%256;
+        newint = (int)(q*intensity);
         newpx[0] = newpx[1] = newpx[2] = newint ;
-        
-        if (newint > 128) {
-          Point2D.Double orig = new Point2D.Double(a+shift, b+shift);
-          tmpPts.addPoint(orig, (double)newint/(256.0));
-        }
         out.setPixel(a+shift, b+shift, newpx);
       }
     }
-    output.setData(out);
     
-    while (retPts.size() < topPts) {
-      logger.info("choosing: " + retPts.size() + " from " + tmpPts.size());
-      if (tmpPts.size() == 0) break;
-      double maxq = 0;
-      int maxIndex = -1;
-      for(int i = 0; i < tmpPts.size(); i++) {
-        if (tmpPts.getQuality(i) >= maxq) {
-          maxq = tmpPts.getQuality(i);
-          maxIndex = i;          
+    return out;
+    
+    
+  }
+  
+  public CPointsAndQualities selectPts(WritableRaster corneredInput, int requestedPts) {
+    int[] intHist = new int[256];
+    int[] px = new int[3];
+    CPointsAndQualities tmpPts = new CPointsAndQualities();
+    
+    int subW = 10;
+    int subH = 8;
+    int ptsPerSub = requestedPts/(subW*subH);
+    int breaks = 0;
+    for (int sub = 0; sub < (subW*subH); sub++) {
+      
+      int wStep = (corneredInput.getWidth()/subW);
+      int hStep = (corneredInput.getHeight()/subH);
+      int topLeftW = (sub % subW) * wStep;
+      int topLeftH = (int)(sub / subW) * hStep;
+      int origSize = tmpPts.size();
+
+
+      logger.info("new it: " + topLeftW + "x" + topLeftH + " to " + (topLeftW+wStep) + "x" + (topLeftH+hStep));
+
+      for (int i = 0; i < 256; i++) {
+        intHist[i] = 0;
+      }
+      logger.info("getting hist");
+      for (int a = topLeftW; a < topLeftW+wStep; a++) {
+        for (int b = topLeftH; b < topLeftH+hStep; b++) {
+          corneredInput.getPixel(a, b, px);
+          intHist[px[0]]++;
         }
       }
-      tmpPts.removePtq(maxIndex);
-      retPts.addPoint(tmpPts.getPoint(maxIndex), tmpPts.getQuality(maxIndex));
-    
+      logger.info("got hist");
+      int ptsSoFar = 0;
+      int histIdx = 255;
+      while (ptsSoFar < ptsPerSub) {
+        //logger.info("hist Idx: " + histIdx + " pts: " + intHist[histIdx]);
+        ptsSoFar += intHist[histIdx];
+        histIdx--;    
+      }
+      logger.info("hist idx at: " + histIdx);
+      if (histIdx == -1) {
+        breaks++;
+        continue;
+        
+      }
+      for (int a = topLeftW; a < topLeftW+wStep; a++) {
+        for (int b = topLeftH; b < topLeftH+hStep; b++) {
+          corneredInput.getPixel(a, b, px);
+          if (px[0] > histIdx) {
+            Point2D.Double orig = new Point2D.Double(a, b);
+            tmpPts.addPoint(orig, (double)(px[0])/(256.0));
+          }
+        }
+      }
+      logger.info(sub+ ": selected " + tmpPts.size());
+      
+      while(tmpPts.size() > ptsPerSub*(sub+1-breaks)) {
+        double minq = 1;
+        int minindex = 0;
+        for (int i = Math.max(0, origSize-1); i < tmpPts.size(); i++) {
+          
+          if (tmpPts.getQuality(i) <  minq) {
+            minq = tmpPts.getQuality(i);
+            minindex = i;
+          }
+        }
+        logger.info("removing" + minindex + " with quality: +" + minq );
+        tmpPts.removePtq(minindex);   
+      }
     }
+  
+    return tmpPts;
+  }
+  
+  private CPointsAndQualities getPoints(BufferedImage input) {
+    
+    CPointsAndQualities tmpPts = new CPointsAndQualities();
+    CPointsAndQualities retPts = new CPointsAndQualities();
+    
+    /* Get edge detector output, greyscale it */
+    logger.info("exception in edging");
+    BufferedImage greyscaleEdged = getEdgedGreyscale(input);
+    logger.info("exception in greyscaling");
+    
+    //actual corner detection
+    logger.info("exception in window size selection");
+    
+    windowSize = 7;
+    shift = windowSize/2;
+    
+    /* CORNER DETECTION */
+    
+    
+    //WritableRaster cornered = getCornerity(greyscaleEdged.getData());
+    logger.info("exception in pts selection");
+    BufferedImage greyscaleImage = (new Crgb2grey()).convert(input);
+    //Raster greyscale = ((new Crgb2grey()).convert(input)).getData();
+    windowSize = getBestWindowSize(greyscaleImage.getData(), 50, 3, 21);
+    
+    shift = windowSize/2;
+    
+    CHarris cornerer = new CHarris(windowSize);
+    BufferedImage cornered = cornerer.execute(greyscaleImage);
+    
+    retPts = selectPts(cornered.getRaster(), topPts);
+
+   //output.setData(out);
+   
     return retPts;
   }
 
-  
+    
   @Override
-  protected CPointPairs doInBackground() {
+  //protected BufferedImage _doInBackground() {
+  protected Double doInBackground() {
+        
+    //return getPoints(imageA);
+    windowSize = 11;
+    BufferedImage greyscaleImage = (new Crgb2grey()).convert(imageA);
+    windowSize = getBestWindowSize(greyscaleImage.getData(), 200, 3, 21);
+    BufferedImage tmp = getEdgedGreyscale(imageA);
+    WritableRaster tmp2 = getCornerity(tmp.getData());
+    BufferedImage ret = new BufferedImage(imageA.getWidth(), imageA.getHeight(), BufferedImage.TYPE_INT_RGB);
+    
+    
+    //logger.info("got to new CHarris");
+    CHarris cornerer = new CHarris(windowSize);
+    
+    if(!harris) ret.setData(tmp2);
+    else ret = cornerer.execute(greyscaleImage);
+    WritableRaster rasterOrig = imageA.getRaster();
+    WritableRaster rasterRef = imageB.getRaster();
+    WritableRaster rasterCorn = ret.getRaster();
+  
+    //WritableRaster rasterCorn = tmp2;
+    int [] origPx = new int [3];
+    int [] refPx = new int [3];
+    int [] cornPx = new int [3];
+    double difference = 0;
+    double pointDif = 0;
+    double cornHits = 0;
+    int blackHits = 0;
+    int refCorners = 0;
+    int refBlacks = 0;
+    for (int i = 0; i < imageA.getWidth(); i++) {
+      for (int j = 0; j < imageA.getHeight(); j++) {
+        cornPx = rasterCorn.getPixel(i, j, cornPx);
+        refPx = rasterRef.getPixel(i, j, refPx);
+        pointDif = Math.abs(cornPx[0] - refPx[0]);
+        difference += pointDif;
+        if (refPx[0] > 250) refCorners++;
+        if (refPx[0] < 20) refBlacks++;
+                
+        if ((refPx[0] < 20) && (cornPx[0] == 0)) blackHits++;
+        if ((cornPx[0] > 10) && (refPx[0] > 20)) {
+          cornHits += (double)refPx[0]/255.0;
+          refPx[0] = 249;
+          refPx[1] = 0;
+          refPx[2] = 0;
+          rasterRef.setPixel(i, j, refPx);
+        }
+        
+      }
+      
+    }
+    double cornweight = refBlacks / refCorners;
+    double score = cornweight*((double)cornHits/(double)refCorners) + ((double)blackHits/(double)refBlacks);
+    
+    if (!harris)
+    logger.info(" COG: difference: " + difference/(rasterOrig.getHeight()*rasterOrig.getWidth()) 
+                + " score: " + score 
+                + " cornHits: " + cornHits 
+                + " out of refConrers: " + refCorners 
+                + " blackHits/refBlacks: " + blackHits + "/" + refBlacks);
+    
+    else
+    logger.info(" Harris: difference: " + difference/(rasterOrig.getHeight()*rasterOrig.getWidth()) 
+                + " score: " + score 
+                + " cornHits: " + cornHits 
+                + " out of refConrers: " + refCorners 
+                + " blackHits/refBlacks: " + blackHits + "/" + refBlacks);
+    
+    
+    return score;
+    //return ret;
+           
+  }
+  
+  //@Override
+  protected CPointPairs _doInBackground() {
+  
+  //protected CPointPairs doInBackground() {
     
     //run previous method on each input image
     // = extract interesting points / corners from each image
@@ -260,7 +490,7 @@ public class CInterestingPoints extends CSupportWorker<CPointPairs, CPointAndTra
     ptqB = this.getPoints(imageB);
     
     
-    int requestedPairs = 100; 
+    int requestedPairs = 160; 
     //TODO: Add to paramSettingDialog
     double correlations[][] = new double[ptqA.size()][ptqB.size()];
     

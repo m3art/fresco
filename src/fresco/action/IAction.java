@@ -62,7 +62,8 @@ public interface IAction {
 		registerMarks,
 		// support
 		registrationMarkSearch,
-		registrationMarksQuality
+		registrationMarksQuality,
+    runMultipleIntPoints
 	};
 
 	public RegID getID();

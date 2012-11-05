@@ -98,7 +98,7 @@ public class CUserActionListener implements ActionListener, ItemListener {
 
 	private class CUserAction {
 
-		public void execute(RegID id) {
+		public void execute(RegID id)  {
 			String s;
 
 			if (manager == null) {
@@ -139,6 +139,14 @@ public class CUserActionListener implements ActionListener, ItemListener {
 					CData.setTool(Tool.regMarker);
 					logger.log(Level.INFO, "New tool selected: {0}", CData.getTool().name());
 					break;
+        case runMultipleIntPoints:
+          try {
+            manager.runMultipleIntPoints();
+          }
+          catch(Exception ex) {
+            return;
+          }
+          break;
 				case sobel:
 				case rotateLeft:
 				case rotateRight:

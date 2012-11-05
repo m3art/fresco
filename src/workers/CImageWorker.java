@@ -90,7 +90,7 @@ public abstract class CImageWorker<T, V> extends SwingWorker<T, V> implements II
 				CPointPairs pairs = new CPointPairs(CData.getImage(CData.showImage[0]).getMarks(), CData.getImage(CData.showImage[2]).getMarks());
 				return new CPointPairsOverview(pairs, CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage());
       case intPoints:
-        return new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage());
+        return new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), false);
 			default:
 				return null;
 		}

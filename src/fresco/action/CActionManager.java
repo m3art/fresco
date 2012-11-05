@@ -15,6 +15,7 @@ import fresco.swing.CDrawPanel;
 import fresco.swing.CInfoFrame;
 import fresco.swing.CPreviewBar;
 import java.awt.image.BufferedImage;
+import java.util.Calendar;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
@@ -25,6 +26,7 @@ import javax.swing.JOptionPane;
 import support.regmarks.CPointPairsOverview;
 import workers.CImageWorker;
 import workers.registration.CPointPairs;
+import workers.registration.CPointsAndQualities;
 import workers.registration.refpointga.CRefPointMarker;
 import workers.registration.CInterestingPoints;
 import workers.segmentation.CSegmentMap;
@@ -251,7 +253,7 @@ public class CActionManager {
 			dialog.setVisible(true);
 		}
 
-		imageWorker.addPropertyChangeListener(progressBar);
+		
     
 		imageWorker.execute();
 	}
@@ -274,8 +276,10 @@ public class CActionManager {
 					CData.output.setSegmentMap((CSegmentMap) imageWorker.get());
 					break;
 				case REGISTRATION:
-          
           CData.output = new CImageContainer((BufferedImage) imageWorker.get(), true);
+       
+      
+          
 					break;
 				case CORRECTOR:
 					CData.output = new CImageContainer((BufferedImage) imageWorker.get(), true);
@@ -299,10 +303,17 @@ public class CActionManager {
 						return;
 					} else if (imageWorker instanceof CInterestingPoints) {
             
-            logger.info("Interesting regmarks");
-            CPointPairs pairs = (CPointPairs) imageWorker.get();
-            CData.getImage(CData.showImage[0]).setMarks(pairs.getOrigins());
-            CData.getImage(CData.showImage[2]).setMarks(pairs.getProjected());
+            
+           //CData.output = new CImageContainer((BufferedImage) imageWorker.get(), true);
+            /*CPointPairs pt = (CPointPairs) imageWorker.get();
+            logger.info("got pts");
+            CData.getImage(CData.showImage[0]).setMarks(pt.getOrigins());
+            logger.info("pts in A");
+            CData.getImage(CData.showImage[2]).setMarks(pt.getProjected());
+            logger.info("pts in B");
+            return;
+            * 
+            */
             return;
           }
             else
@@ -352,4 +363,38 @@ public class CActionManager {
 		content.setStructure(regID);
 		refreshGUI();
 	}
+  
+  public void runMultipleIntPoints() throws InterruptedException {
+    
+    
+    for (int i = 0; i < CData.imagesSize(); i+=2) {
+      if (CData.imagesSize() == i+1) break;
+      if(!CData.input2Showed) show2ndInput();    
+      CData.showImage[0] = i;
+      imagePanel[0].setSizeByImage();
+      CData.showImage[2] = i+1;
+      imagePanel[2].setSizeByImage();
+      
+      refreshGUI();
+      
+      
+      //imageWorker = CImageWorker.createWorker(RegID.intPoints, null);
+      CInterestingPoints CW = new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), false);
+      CW.addPropertyChangeListener(progressBar);
+      CW.execute();
+      while(!CW.isDone()) {
+        Thread.sleep(1000);
+      };
+      CW = new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), true);
+      CW.addPropertyChangeListener(progressBar);
+      CW.execute();
+      while(!CW.isDone()) {
+        Thread.sleep(1000);
+      };
+      
+      refreshGUI();
+    }
+  
+  
+  }
 }

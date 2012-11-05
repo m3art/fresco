@@ -28,8 +28,10 @@ public class CToolBar extends JToolBar implements IFrescoComponent {
 		"/icons/loupe.png",
 		"/icons/rotLeft.png",
 		"/icons/rotRight.png",
-		"/icons/marker18x18.png",};
-	CButton open, save, rotLeft, rotRight;
+		"/icons/marker18x18.png",
+    "/icons/multInt.png",
+  };
+	CButton open, save, rotLeft, rotRight, runMult;
 	JLabel loupe;
 	JToggleButton regMarks;
 	CZoomComboBox scaler;
@@ -67,6 +69,12 @@ public class CToolBar extends JToolBar implements IFrescoComponent {
 		regMarks.addActionListener(CData.userActionListener);
 		regMarks.setToolTipText("Marks useful for registration - simple click into image.");
 		add(regMarks);
+    
+    runMult = new CButton((ImageIcon) icons[6], RegID.runMultipleIntPoints);
+		runMult.addActionListener(CData.userActionListener);
+		add(runMult);
+    
+    
 	}
 
 	private static ImageIcon[] loadIcons() {
