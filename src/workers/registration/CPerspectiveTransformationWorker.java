@@ -6,12 +6,13 @@ package workers.registration;
 
 import fresco.CImageContainer;
 import image.colour.CBilinearInterpolation;
-import java.awt.Point;
+import java.awt.Dimension;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.util.LinkedList;
+import java.util.logging.Logger;
 import utils.geometry.CPerspectiveTransformation;
 
 /**
@@ -25,56 +26,87 @@ import utils.geometry.CPerspectiveTransformation;
  */
 public class CPerspectiveTransformationWorker extends CRegistrationWorker {
 
-	LinkedList<Point2D.Double> patternMarks, transformMarks;
-	BufferedImage original;
-	Point size;
+	/**
+	 * Registration marks lists
+	 */
+	private final LinkedList<Point2D.Double> patternMarks, transformMarks;
+	/**
+	 * Images
+	 */
+	private final BufferedImage original, pattern;
+	/**
+	 * Output image size (same as pattern.getSize())
+	 */
+	private final Dimension outputDimensions;
+	/**
+	 * Image type is the same as type of original image
+	 */
+	private final int outputImageType;
+	private static final Logger logger = Logger.getLogger(CPerspectiveTransformationWorker.class.getName());
 
 	/**
-	 *
-	 * @param toTransform
-	 * @param pattern
+	 * @param toTransform image which will be transformed
+	 * @param pattern serves for mark alignment and size of pattern is fitted by
+	 * transformation
 	 */
 	public CPerspectiveTransformationWorker(CImageContainer toTransform, CImageContainer pattern) {
 		original = toTransform.getImage();
-		size = new Point(pattern.getWidth(), pattern.getHeight());
+		outputImageType = original.getType();
+		this.pattern = pattern.getImage();
+		outputDimensions = new Dimension(pattern.getWidth(), pattern.getHeight());
 		transformMarks = toTransform.getMarks();
 		patternMarks = pattern.getMarks();
 	}
 
 	@Override
 	protected BufferedImage doInBackground() {
+		Raster origRaster = original.getData();
+
+		//logger.info("Moving marks ...");
+		// align user defined marks
+		//CMarkAlign.align(origRaster, transformMarks, pattern.getRaster(), patternMarks);
+
+		// compute transformation
+		logger.info("Computing transformation ...");
+		CPerspectiveTransformation trans = computeTransformation(patternMarks, transformMarks);
+		logger.info(trans.dump());
+
+		// image transformation
+		logger.info("Transforming image ...");
+		return transformImage(origRaster, trans);
+	}
+
+	private static CPerspectiveTransformation computeTransformation(LinkedList<Point2D.Double> patternMarks, LinkedList<Point2D.Double> transformMarks) {
 		CPerspectiveTransformation trans = new CPerspectiveTransformation();
-		BufferedImage output = new BufferedImage(size.x, size.y, original.getType());
-		WritableRaster out = output.getRaster();
-		Raster in = original.getData();
-		int x, y;
-		double[] pixel;
-		double[] black = {0, 0, 0};
-		Point2D.Double ref;
 
 		if (patternMarks.size() > 3 && transformMarks.size() > 3) {
 			Point2D.Double[] marks = new Point2D.Double[4], refs = new Point2D.Double[4];
 
 			for (int i = 0; i < 4; i++) {
-				marks[i] = transformMarks.remove();
+				marks[i] = transformMarks.get(i);
 				refs[i] = patternMarks.get(i);
 			}
 
 			trans.setParameters(refs[0], marks[0], refs[1], marks[1], refs[2], marks[2], refs[3], marks[3]);
-			// trans.setParameters(marks[0], refs[0], marks[1], refs[1], marks[2], refs[2], marks[3], refs[3]);
 		}
-		trans.print();
+		return trans;
+	}
 
-		for (x = 0; x < size.x; x++) {
-			for (y = 0; y < size.y; y++) {
-				ref = trans.getProjected(new Point2D.Double(x, y));
-				if (ref.x <= original.getWidth()-1 && ref.x >= 0
-						&& ref.y <= original.getHeight()-1 && ref.y >= 0) {
+	private BufferedImage transformImage(Raster in, CPerspectiveTransformation trans) {
+		BufferedImage output = new BufferedImage((int)outputDimensions.getWidth(), (int)outputDimensions.getHeight(), outputImageType);
+		WritableRaster out = output.getRaster();
+		for (int x = 0; x < outputDimensions.getWidth(); x++) {
+			for (int y = 0; y < outputDimensions.getHeight(); y++) {
+				Point2D.Double ref = trans.getProjected(new Point2D.Double(x, y));
+				double[] pixel;
+				if (ref.x <= in.getWidth() - 1 && ref.x >= 0
+						&& ref.y <= in.getHeight() - 1 && ref.y >= 0) {
 					pixel = CBilinearInterpolation.getValue(ref, in);
 				} else {
-					pixel = black;
+					pixel = new double[]{0, 0, 0};
 				}
 				out.setPixel(x, y, pixel);
+				setProgress((int)((x*outputDimensions.getHeight()+y)*100/outputDimensions.getWidth()/outputDimensions.getHeight()));
 			}
 		}
 		output.setData(out);
