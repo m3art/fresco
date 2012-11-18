@@ -69,6 +69,7 @@ public class Crgb2grey extends CImageConverter {
 		return 0.3 * red + 0.59 * green + 0.11 * blue;
 	}
 
+	/** converts RGB value into grayscale  range of intensity is the same */
 	public static double convertToOneValue(double[] rgb) {
 		return 0.3 * rgb[0] + 0.59 * rgb[1] + 0.11 * rgb[2];
 	}
@@ -82,6 +83,7 @@ public class Crgb2grey extends CImageConverter {
 		return rgb;
 	}
 
+	@Override
 	protected int[] convertPixel(int[] rgb) {
 		return convert(rgb);
 	}

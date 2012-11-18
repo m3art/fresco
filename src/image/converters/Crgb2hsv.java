@@ -4,6 +4,7 @@
  */
 package image.converters;
 
+import java.awt.Color;
 import java.awt.image.BufferedImage;
 import utils.vector.CBasic;
 
@@ -68,6 +69,49 @@ public class Crgb2hsv extends CImageConverter {
 		}
 
 		return outInt;
+	}
+
+	/**
+	 * this function converts Color to hsv double array. Input colors has range 0-255
+	 * output colors are integers with range - hue 0-359
+	 * saturation and value 0-255
+	 * @param rgb is input color
+	 * @return hsv representation of input colors
+	 */
+	public static float[] convert(float[] rgb) {
+
+		double[] rgbDouble = new double[3];
+
+		rgbDouble[0] = rgb[0];
+		rgbDouble[1] = rgb[1];
+		rgbDouble[2] = rgb[2];
+
+		double[] hsvDouble = convert(rgbDouble);
+		float[] out = new float[3];
+
+		out[0] = (float)(hsvDouble[0]);
+		out[1] = (float)(hsvDouble[1]);
+		out[2] = (float)(hsvDouble[2]);
+
+		return out;
+	}
+
+	/**
+	 * this function converts Color to hsv double array. Input colors has range 0-255
+	 * output colors are integers with range - hue 0-359
+	 * saturation and value 0-255
+	 * @param rgb is input color
+	 * @return hsv representation of input colors
+	 */
+	public static double[] convert(Color rgb) {
+
+		double[] rgbDouble = new double[3];
+
+		rgbDouble[0] = rgb.getRed();
+		rgbDouble[1] = rgb.getGreen();
+		rgbDouble[2] = rgb.getBlue();
+
+		return convert(rgbDouble);
 	}
 
 	/**
