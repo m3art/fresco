@@ -124,14 +124,15 @@ public class CPerspectiveTransformation implements ITransformation2D {
 		a[1] = a[2] = a[3] = a[5] = a[6] = a[7] = 0;
 	}
 
-	public void print() {
+	public String dump() {
 		int i;
 
-		System.out.print("Parametry transformace: ");
+		StringBuilder sb = new StringBuilder("Parametry transformace: \n");
 		for (i = 0; i < NUMBER_OF_PARAMS; i++) {
-			System.out.print(a[i] + " ");
+			sb.append(String.format("%.2f", a[i])).append(", ");
 		}
-		System.out.println();
+		sb.append("\n");
+		return sb.toString();
 	}
 
 	private double[][] GEM(double[][] input) {

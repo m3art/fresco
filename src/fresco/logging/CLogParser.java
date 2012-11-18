@@ -31,18 +31,17 @@ public class CLogParser {
 		Properties params = new Properties();
 		BufferedReader reader = new BufferedReader(new FileReader(file));
 
-		String line, key;
-		int delPos, openedFiles = 0;
+		String line;
 
 		while ((line = reader.readLine()) != null) {
 
-			delPos = line.indexOf(Delimiter);
-			key = line.substring(0, delPos).toLowerCase();
+			int delPos = line.indexOf(Delimiter);
+			String key = line.substring(0, delPos).toLowerCase();
 
 			if (!key.contains("open")) {
 				params.setProperty(line.substring(0, delPos).toLowerCase(), line.substring(delPos + 1));
 			} else {
-				params.setProperty("open" + openedFiles, line.substring(delPos + 1));
+				params.setProperty(key, line.substring(delPos + 1));
 			}
 		}
 

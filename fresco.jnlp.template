@@ -15,7 +15,7 @@
         <!-- Application Resources -->
 		 <j2se version="1.6+"
               href="http://java.sun.com/products/autodl/j2se"
-              java-vm-args="-Xmx1500m -Dcom.apple.mrj.application.apple.menu.about.name=Fresco -Dapple.laf.useScreenMenuBar=true -Xdock:icon=src/icons/Zebra-128x128.png"/>  <!-- secure java vm argument -->
+              java-vm-args="-Xmx1500m -Dcom.apple.mrj.application.apple.menu.about.name=Fresco -Xdock:icon=src/icons/Zebra-128x128.png"/>  <!-- secure java vm argument -->
         <jar href="fresco.jar" main="true" />
 		<jar href="lib/it.tidalwave.imageio.raw-1.6.1.jar" main="true" />
 		<jar href="lib/jai_codec.jar" main="true" />

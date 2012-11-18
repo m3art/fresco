@@ -5,6 +5,7 @@
 package fresco.swing;
 
 import file.CImageFile;
+import file.CImageLoader;
 import fresco.CData;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -22,6 +23,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import javax.swing.JFrame;
 import fresco.logging.CLogParser;
+import java.util.LinkedList;
 
 /**
  * Parameters last used Fresco
@@ -57,7 +59,6 @@ public final class CAppWindow extends JFrame implements WindowListener, IFrescoC
 
 		setJMenuBar(menuBar = new CMenuBar());
 		setContentPane(contentPane = new CContentPane());
-
 
 		pack();
 		checkEnabled();
@@ -95,11 +96,24 @@ public final class CAppWindow extends JFrame implements WindowListener, IFrescoC
 		int filesOpened = 0;
 		while (true) {
 			if (params.getProperty("open" + filesOpened) == null) {
+				logger.log(Level.FINE, "{0} files used in last session", (filesOpened));
 				break;
 			}
+			logger.log(Level.FINE, "Open {0}", params.getProperty("open" + filesOpened));
 			fileOpened.add(params.getProperty("open" + filesOpened));
 			filesOpened++;
 		}
+
+		LinkedList<File> files = new LinkedList<File>();
+		for(String fileName: fileOpened) {
+			File file = new File(fileName);
+			if (file.exists()) {
+				files.add(file);
+			}
+		}
+		logger.log(Level.FINE, "Opening {0} files ...", files.size());
+		CImageLoader loader = new CImageLoader(files.toArray(new File[0]));
+		loader.execute();
 	}
 
 	/**

@@ -36,7 +36,7 @@ import javax.swing.JFileChooser;
  */
 public class CImageFile {
 
-	private static Logger logger = Logger.getLogger(CImageFile.class.getName());
+	private static final Logger logger = Logger.getLogger(CImageFile.class.getName());
 
 	public static void openPicture() {
 		File working_path = CData.getWorkingPath();

@@ -16,6 +16,7 @@ public class Main {
 	 * @param args the command line arguments
 	 */
 	public static void main(String[] args) {
+		System.setProperty("apple.laf.useScreenMenuBar", "true");
 		CData.mainFrame = new CAppWindow("Fresco");
 		CData.mainFrame.setVisible(true);
 	}

@@ -101,7 +101,7 @@ PROPERTIES NAMING CONVENTIONS:
 			<fileset refid="fresco.classes" />
 			<fileset refid="fresco.resources" />
 		</zip>
-		<signjar jar="${dist.dir}/${fresco.filename}" alias="frescosign" keypass="frescoSignum"
+		<signjar jar="${dist.dir}/${fresco.filename}" alias="frescosign2012" keypass="frescoSignum"
 			keystore="frescoKeystore" storepass="frescoSignum" />
 	</target>
 
@@ -124,6 +124,12 @@ PROPERTIES NAMING CONVENTIONS:
 		<filename name="*" />
 	</fileset>
 	<property name="jnlp.template" value="fresco.jnlp.template" />
+
+	<target name="lib-sign" description="(dist) sign necessary libraries">	
+		<signjar jar="${lib.dir}/it.tidalwave.imageio.raw-1.6.1.jar" alias="frescosign2012" keypass="frescoSignum" keystore="frescoKeystore" storepass="frescoSignum" />
+		<signjar jar="${lib.dir}/jai_codec.jar" alias="frescosign2012" keypass="frescoSignum" keystore="frescoKeystore" storepass="frescoSignum" />
+		<signjar jar="${lib.dir}/jai_core.jar" alias="frescosign2012" keypass="frescoSignum" keystore="frescoKeystore" storepass="frescoSignum" />
+	</target>
 
 	<target name="fresco-deploy" depends="fresco-rebuild" description="(dist) creates webstart files in web.dir folder">
 		<mkdir dir="${web.dir}" />
