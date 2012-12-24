@@ -31,7 +31,7 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 	// edit menu items
 	CMenuItem fixImage, fixSegments, rename, capture;
 	// analysis items
-	CMenuItem diff, sobel, laplacian, wavelets, mutualInfo, pca, patternAnalysis, intPoints;
+	CMenuItem diff, sobel, laplacian, wavelets, mutualInfo, pca, patternAnalysis, intPoints, harris, COG;
 	// correction items
 	CMenuItem ahe, colorShift;
 	// transform items
@@ -211,6 +211,14 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
     intPoints = new CMenuItem("Find Interesting points", RegID.intPoints);
 		intPoints.addActionListener(CData.userActionListener);
 		analysisMenu.add(intPoints);
+    
+    harris = new CMenuItem("Harris corner detector", RegID.harris);
+		harris.addActionListener(CData.userActionListener);
+		analysisMenu.add(harris);
+     
+    COG = new CMenuItem("COG corner detector", RegID.COG);
+		COG.addActionListener(CData.userActionListener);
+		analysisMenu.add(COG);
 	}
 
 	public void checkEnabled() {

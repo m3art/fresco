@@ -6,23 +6,21 @@ package workers;
 
 import fresco.CData;
 import fresco.action.IAction.RegID;
-import java.awt.image.BufferedImage;
 import java.util.logging.Logger;
 import javax.swing.JDialog;
 import javax.swing.SwingWorker;
 import support.regmarks.CPointPairsOverview;
-import workers.analyse.CCannyEdgeDetector;
-import workers.analyse.CDiff;
-import workers.analyse.CLaplacian;
-import workers.analyse.CVariationOfInformationGraph;
-import workers.analyse.CPatternAnalyzer;
+import workers.analyse.*;
+import workers.analyse.paramObjects.CHarrisParams;
 import workers.correction.CAdaptiveHistogramEnhancing;
 import workers.correction.CColorShiftWorker;
+import workers.registration.CInterestingPoints;
+import workers.registration.CInterestingPoints.Cornerer;
+import workers.registration.CInterestingPoints.Edger;
 import workers.registration.CPerspectiveTransformationWorker;
 import workers.registration.CPointPairs;
 import workers.registration.refpointga.CRefPointMarker;
 import workers.segmentation.CColorQuantizer;
-import workers.registration.CInterestingPoints;
 import workers.tools.CRotation;
 import workers.tools.CRotation.Rotation;
 
@@ -90,7 +88,13 @@ public abstract class CImageWorker<T, V> extends SwingWorker<T, V> implements II
 				CPointPairs pairs = new CPointPairs(CData.getImage(CData.showImage[0]).getMarks(), CData.getImage(CData.showImage[2]).getMarks());
 				return new CPointPairsOverview(pairs, CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage());
       case intPoints:
-        return new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), false);
+        CHarrisParams pi = new CHarrisParams();
+        return new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), Cornerer.harris, Edger.LOG, pi);
+      case harris:
+        CHarrisParams ph = new CHarrisParams();
+        return new CHarris(CData.getImage(CData.showImage[0]).getImage(), ph);
+      case COG:
+        return new CCornerDetectorCOG(CData.getImage(CData.showImage[0]).getImage());
 			default:
 				return null;
 		}

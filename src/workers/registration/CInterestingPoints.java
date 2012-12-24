@@ -36,8 +36,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import javax.imageio.ImageTypeSpecifier;
 import utils.metrics.*;
-import workers.analyse.CHarris;
-import workers.analyse.CLaplacian;
+import workers.analyse.*;
+
+import workers.analyse.paramObjects.CCOGParams;
+import workers.analyse.paramObjects.CExtractorParams;
+import workers.analyse.paramObjects.CHarrisParams;
 
 
 
@@ -73,14 +76,17 @@ import workers.analyse.CLaplacian;
 public class CInterestingPoints extends CSupportWorker<Double, Void> {
   private static final Logger logger = Logger.getLogger(CImageWorker.class.getName());
   public static int topPts = 160; //TODO parametrize
-  private BufferedImage imageA, imageB;
+  private BufferedImage imageA, imageB, output;
   private CPointPairs pairsOut;
   private CPointsAndQualities ptqA, ptqB;
+  private CLocalMaximiser maximiser;
   private int[] black;
   private int[] white;  
   private int windowSize;
   private int shift;
-  private boolean harris;
+  private Cornerer cornerer;
+  private Edger edger;
+  private CExtractorParams param;
   
   
   
@@ -93,14 +99,24 @@ public class CInterestingPoints extends CSupportWorker<Double, Void> {
 		return "SUPPORT";
 	}
 
-
+  public static enum Edger {
+    sobel,
+    LOG
+  }
+  
+  public static enum Cornerer {
+    harris,
+    COG,
+    random
+  
+  }
   
   @Override
   public String getWorkerName() {
     return "Interesting points search worker";
   }
 
-  public CInterestingPoints(BufferedImage one, BufferedImage two, boolean harris) {
+  public CInterestingPoints(BufferedImage one, BufferedImage two, Cornerer c, Edger e, CExtractorParams inputParam) {
     this.imageA = one;
     this.imageB = two;
     this.ptqA = new CPointsAndQualities();
@@ -117,87 +133,56 @@ public class CInterestingPoints extends CSupportWorker<Double, Void> {
     this.white[0] = 255;
     this.white[1] = 255;
     this.white[2] = 255;
-    this.harris = harris;
+    this.cornerer = c;
+    this.edger = e;
+    this.maximiser = new CLocalMaximiser(7);
+    this.param = inputParam;
+    
     //logger.info("created new CIP");
-    
-    
   }
   
   public BufferedImage getEdgedGreyscale(BufferedImage input) {
     
     BufferedImage edgedImage = null;
     BufferedImage greyscale = null;
-    CCannyEdgeDetector edgeMaker  = new CCannyEdgeDetector(input, 0.1f, 0.9f);
-    CLaplacian LoG = new CLaplacian(input);
-    try {
-      edgeMaker.execute();
-      edgedImage = edgeMaker.get();
+    
+    if (edger == Edger.sobel) {
+      CCannyEdgeDetector sobel  = new CCannyEdgeDetector(input, 0.1f, 0.9f);
+      try {
+      //sobel.execute();
+      edgedImage = sobel.runPublic();
       
-      //edgeMaker.execute();
-      //edgedImage = (BufferedImage) edgeMaker.get();
-    } catch (Exception e) {
-      JOptionPane.showMessageDialog(new JFrame(), "Exception in image edges\n", "Interesting points stopped", JOptionPane.WARNING_MESSAGE); 
+      //edgeMaker.runHarris();
+      //edgedImage = (BufferedImage) sobel.get();
+      } catch (Exception e) {
+        logger.log(Level.SEVERE, "exception in sobel image edges, stopped");
+        logger.log(Level.SEVERE, e.getMessage());
+        //JOptionPane.showMessageDialog(new JFrame(), "Exception in image edges\n", "Interesting points stopped", JOptionPane.WARNING_MESSAGE); 
+      }
+      sobel.image = null;
+      sobel.input = null;
+      
+      sobel = null;
     }
+    else if (edger == Edger.LOG) {
+       CLaplacian LoG = new CLaplacian(input);
+       try {
+         LoG.execute();
+         edgedImage = LoG.get();
+       } catch (Exception e) {
+         logger.log(Level.SEVERE, "exception in  LoG image edges, stopped");
+         logger.log(Level.SEVERE, e.getMessage());
+        //JOptionPane.showMessageDialog(new JFrame(), "Exception in image edges\n", "Interesting points stopped", JOptionPane.WARNING_MESSAGE); 
+       }
+       
+       LoG = null;
+    }
+    
     greyscale = (new Crgb2grey()).convert(edgedImage);
     return greyscale;
   
   }
-  
-  public int getBestWindowSize(Raster greyInput, int testFields, int lowerBound, int upperBound) {
-    int bestSize = lowerBound;
-    double bestMeasure = 0.0;
-    
-    for(int i = lowerBound; i < upperBound; i += 2) {
-      
-      double testFieldEntropy = 0;
-      double entropySum = 0;
-      double measure = 0;
-      int [] pixel = new int[3];
-      int [] colorFrequencies = new int[256];
-      
-      for(int t = 0; t < testFields; t++) {
-        
-        //initialize variables for new test field        
-        testFieldEntropy = 0;
-        for (int color = 0; color < 256; color++) {
-          colorFrequencies[color] = 0;
-        }
-        // get test field 
-        int x = (int)(Math.random()*(greyInput.getWidth()-i-1));
-        int y = (int)(Math.random()*(greyInput.getHeight()-i-1));
-        
-        
-        //fill out frequencies of colors (intensities on grey scale)
-        for (int px = x; px < x+i; px++) {
-          for (int py = y; py < y + i; py++) {
-            greyInput.getPixel(px, py, pixel);
-            colorFrequencies[pixel[0]]++;           
-          }
-        }
-        
-        //calculate the entropy itself
-        for (int color = 0; color < 256; color++) {
-          if (colorFrequencies[color] != 0){
-            testFieldEntropy -=((double)colorFrequencies[color]/(double)(i*i)) * Math.log((double)colorFrequencies[color]/(double)(i*i));
-          }
-        }
-        entropySum += testFieldEntropy;
-      }
-      //execution time is a factor, and entropy will hit a plateau sooner or later
-      // -> add size of field as a negative factor
-      
-      measure = ((entropySum/(double)testFields)-((double)i/38));
-      //logger.info("size:" + i + " measure: " + measure + " entropy: "+entropySum/(double)testFields);
-      //search for best window size
-      if (measure >= bestMeasure) { 
-        bestMeasure = measure;
-        bestSize = i;
-      }
 
-    }
-    logger.info("bestSize: " + bestSize);
-    return bestSize;
-  }
   
   public WritableRaster getCornerity(Raster input) {
     int [] current = null;
@@ -388,12 +373,12 @@ public class CInterestingPoints extends CSupportWorker<Double, Void> {
     logger.info("exception in pts selection");
     BufferedImage greyscaleImage = (new Crgb2grey()).convert(input);
     //Raster greyscale = ((new Crgb2grey()).convert(input)).getData();
-    windowSize = getBestWindowSize(greyscaleImage.getData(), 50, 3, 21);
+    windowSize = CBestWindowSize.getBestWindowSize(greyscaleImage.getRaster(), 50, 3, 21);
     
     shift = windowSize/2;
     
-    CHarris cornerer = new CHarris(windowSize);
-    BufferedImage cornered = cornerer.execute(greyscaleImage);
+    CHarris cornerer = new CHarris((CHarrisParams) param);
+    BufferedImage cornered = cornerer.runHarris(greyscaleImage);
     
     retPts = selectPts(cornered.getRaster(), topPts);
 
@@ -401,26 +386,79 @@ public class CInterestingPoints extends CSupportWorker<Double, Void> {
    
     return retPts;
   }
-
+  
     
   @Override
   //protected BufferedImage _doInBackground() {
   protected Double doInBackground() {
         
     //return getPoints(imageA);
-    windowSize = 11;
-    BufferedImage greyscaleImage = (new Crgb2grey()).convert(imageA);
-    windowSize = getBestWindowSize(greyscaleImage.getData(), 200, 3, 21);
-    BufferedImage tmp = getEdgedGreyscale(imageA);
-    WritableRaster tmp2 = getCornerity(tmp.getData());
+    //windowSize = 11;
+    //BufferedImage greyscaleImage = (new Crgb2grey()).convert(imageA);
+    //windowSize = CBestWindowSize.getBestWindowSize(greyscaleImage.getData(), 20000, 3, 25);
+    BufferedImage edgedGreyscale = getEdgedGreyscale(imageA);
+    //WritableRaster tmp2 = getCornerity(tmp.getData());
+    
+    
+    output = new BufferedImage(imageA.getWidth(), imageA.getHeight(), BufferedImage.TYPE_INT_RGB);
+    //logger.info("got to new CHarris");
     BufferedImage ret = new BufferedImage(imageA.getWidth(), imageA.getHeight(), BufferedImage.TYPE_INT_RGB);
     
     
-    //logger.info("got to new CHarris");
-    CHarris cornerer = new CHarris(windowSize);
+    if (this.cornerer == Cornerer.harris) {
+      CHarrisParams p = (CHarrisParams) param;
+      
+      CHarris harris = new CHarris(p);
+      ret = maximiser.runMaxima(harris.runHarris(edgedGreyscale));
+    }
     
-    if(!harris) ret.setData(tmp2);
-    else ret = cornerer.execute(greyscaleImage);
+    else if(this.cornerer == Cornerer.COG) {
+      /*CCOGParams p = new CCOGParams();
+      p.windowSize = windowSize;
+      p.scale = 256;
+      p.threshold = 20;
+      p.centerWhitenessW = 1.0;
+      p.perpCW = 1.0;
+      p.distW = 1.0;
+      p.whiteDiffW = 1.0;
+      */
+      
+      CCOGParams p = (CCOGParams)param;
+      
+      CCornerDetectorCOG cog = new CCornerDetectorCOG(edgedGreyscale, output, p);
+      try{ 
+        //cog.execute();
+        //cog.get();
+        //logger.info("running COG");
+        output = cog.publicRun();
+        //logger.info("cog finished");
+      } catch (Exception e) {
+        
+        logger.log(Level.SEVERE, "exception in COG cornering, stopped");
+        logger.log(Level.SEVERE, e.getMessage());
+        //JOptionPane.showMessageDialog(new JFrame(), "Exception in COG corner detecting\n", "Interesting points stopped", JOptionPane.WARNING_MESSAGE); 
+      }
+      ret = maximiser.runMaxima(output);
+      cog.image = null;
+      cog.output = null;
+      cog = null;
+    }
+    
+    else if(this.cornerer == Cornerer.random) {
+      int w = imageA.getWidth();
+      int h = imageA.getHeight();
+      int [] newpx = new int[3];
+      output = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+      WritableRaster outputData = output.getRaster();
+      for (int i = 0; i < w; i++) {
+        for (int j = 0; j < h; j++) {
+          newpx[0] = newpx[1] = newpx[2] = (int)(255.0*Math.random());
+          outputData.setPixel(i, j, newpx);
+        }
+      }
+      ret = maximiser.runMaxima(output);
+    }
+    
     WritableRaster rasterOrig = imageA.getRaster();
     WritableRaster rasterRef = imageB.getRaster();
     WritableRaster rasterCorn = ret.getRaster();
@@ -442,41 +480,65 @@ public class CInterestingPoints extends CSupportWorker<Double, Void> {
         pointDif = Math.abs(cornPx[0] - refPx[0]);
         difference += pointDif;
         if (refPx[0] > 250) refCorners++;
-        if (refPx[0] < 20) refBlacks++;
+        if (refPx[0] < 250) refBlacks++;
                 
-        if ((refPx[0] < 20) && (cornPx[0] == 0)) blackHits++;
-        if ((cornPx[0] > 10) && (refPx[0] > 20)) {
-          cornHits += (double)refPx[0]/255.0;
-          refPx[0] = 249;
-          refPx[1] = 0;
-          refPx[2] = 0;
-          rasterRef.setPixel(i, j, refPx);
+        if ((cornPx[0] > 0) && (refPx[0]) > 0) {
+          cornHits += (double)refPx[0]*(double)cornPx[0]/(255.0*255.0);
         }
-        
+        if ((refPx[0] < 250) && (cornPx[0]) == 0) {
+          blackHits++;
+        }
       }
-      
     }
     double cornweight = refBlacks / refCorners;
-    double score = cornweight*((double)cornHits/(double)refCorners) + ((double)blackHits/(double)refBlacks);
+    double score = cornweight*cornHits + blackHits;
+    score /= (refBlacks)*2;
     
-    if (!harris)
-    logger.info(" COG: difference: " + difference/(rasterOrig.getHeight()*rasterOrig.getWidth()) 
+    if (this.cornerer == Cornerer.COG) {
+    CCOGParams p = (CCOGParams) param;
+      logger.info( "c: " + cornerer.toString() + " e: " + edger.toString()
+                + "cW: " + p.centerWhitenessW + " d: " + p.distW + " pC: " + p.perpCW + " wD: " + p.whiteDiffW + " thr: " + p.threshold
                 + " score: " + score 
-                + " cornHits: " + cornHits 
-                + " out of refConrers: " + refCorners 
+                + " diff: " + difference/(rasterOrig.getHeight()*rasterOrig.getWidth()) 
+                + " cornHits/refCorners: " + cornHits + "/" + refCorners
                 + " blackHits/refBlacks: " + blackHits + "/" + refBlacks);
+    }
     
-    else
+    /*else
     logger.info(" Harris: difference: " + difference/(rasterOrig.getHeight()*rasterOrig.getWidth()) 
                 + " score: " + score 
                 + " cornHits: " + cornHits 
                 + " out of refConrers: " + refCorners 
                 + " blackHits/refBlacks: " + blackHits + "/" + refBlacks);
     
+    */
     
+    rasterCorn = null;
+    rasterRef = null;
+    rasterOrig = null;
+    //greyscaleImage = null;
+    edgedGreyscale = null;
+    output = null;
+    
+    ret = null;
     return score;
     //return ret;
            
+  }
+  
+  @Override
+  protected void done() {
+    this.imageA = null;
+    this.imageB = null;
+    this.output = null;
+    this.maximiser = null;
+    
+  
+  }
+  
+  
+  public Double publicRun() {
+    return doInBackground();
   }
   
   //@Override
@@ -653,5 +715,4 @@ public class CInterestingPoints extends CSupportWorker<Double, Void> {
     return pairsOut;
   }
 }
-
 

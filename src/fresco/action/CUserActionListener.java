@@ -163,7 +163,9 @@ public class CUserActionListener implements ActionListener, ItemListener {
 				case registrationMarkSearch:
 				case registrationMarksQuality:
         case intPoints:
-					manager.runImageWorker(id, null);
+        case harris:
+        case COG:
+          manager.runImageWorker(id, null);
 					break;
 			}
 		}

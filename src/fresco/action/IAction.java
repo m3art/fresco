@@ -47,6 +47,8 @@ public interface IAction {
 		mutualInfo,
 		patternAnalyzer,
     intPoints,
+    harris,
+    COG,
 		// correction
 		ahe,
 		colorShift,

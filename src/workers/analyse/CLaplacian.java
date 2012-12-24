@@ -28,15 +28,17 @@ public class CLaplacian extends CAnalysisWorker {
 	private final static int FILTER_SIZE_DEFAULT = 3;
 
 	/** size of input image */
-	private final Dimension size;
+	//private final Dimension size;
 	/** output image - with edges */
-	private final BufferedImage image;
+	private BufferedImage image;
 	/** input raster */
-	private final Raster input;
+	private Raster input;
 	/** Number of colour bans */
 	private final int bands;
 	/** Size of filter (3 or 5)*/
 	int filterSize;
+  private int w;
+  private int h;
 	/** Precomputed filters */
 	public static int[][] M3 = {{1, 1, 1}, {1, -8, 1}, {1, 1, 1}};
 	public static int[][] M5 = {{0, 0, 1, 0, 0},
@@ -46,10 +48,12 @@ public class CLaplacian extends CAnalysisWorker {
 		{0, 0, 1, 0, 0}};
 
 	public CLaplacian(BufferedImage original) {
-		size = new Dimension(original.getWidth(), original.getHeight());
+		//size = new Dimension(original.getWidth(), original.getHeight());
 		input = original.getData();
 		filterSize = FILTER_SIZE_DEFAULT;
-		image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_RGB);
+		w = original.getWidth();
+    h = original.getHeight();
+    image = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
 		bands = original.getSampleModel().getNumBands();
 	}
 
@@ -59,14 +63,14 @@ public class CLaplacian extends CAnalysisWorker {
 		int[] A = null;
 		int[] sum = new int[bands];
 		WritableRaster raster = image.getRaster();
-
-		for (x = 0; x < size.width; x++) {
-			for (y = 0; y < size.height; y++) {
+    
+		for (x = 0; x < w; x++) {
+			for (y = 0; y < h; y++) {
 
 				if (x - (filterSize - 1) / 2 < 0
-						|| x + (filterSize - 1) / 2 > size.width - 1
+						|| x + (filterSize - 1) / 2 > w - 1
 						|| y - (filterSize - 1) / 2 < 0
-						|| y + (filterSize - 1) / 2 > size.height - 1) {
+						|| y + (filterSize - 1) / 2 > h - 1) {
 					input.getPixel(x, y, sum);
 				} else {
 					for (b = 0; b < bands; b++) {
@@ -83,11 +87,13 @@ public class CLaplacian extends CAnalysisWorker {
 					}
 				}
 				raster.setPixel(x, y, sum);
-				setProgress(100 * (x * size.height + y) / (size.width * size.height));
+				setProgress(100 * (x * h + y) / (w * h));
 			}
 		}
-
-		image.setData(raster);
+    sum = null;
+    A = null;
+    image.setData(raster);
+    raster = null;
 		return image;
 	}
 

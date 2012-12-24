@@ -22,9 +22,9 @@ public class CCannyEdgeDetector extends CAnalysisWorker {
 	/** Size of output image */
 	private final Dimension size;
 	/** Output image */
-	private final BufferedImage image;
+	public BufferedImage image;
 	/** Input data in raster format */
-	private final Raster input;
+	public Raster input;
 	/** Number of colours presented in input data.
 	 * NOTE: original algorithm works with grayscale images. Here is edge detection
 	 * made for each colour band.
@@ -44,7 +44,7 @@ public class CCannyEdgeDetector extends CAnalysisWorker {
 	 */
 	public CCannyEdgeDetector(BufferedImage original) {
 		size = new Dimension(original.getWidth(), original.getHeight());
-		input = original.getData();
+		input = original.getRaster();
 		image = new BufferedImage((int) size.getWidth(), (int) size.getHeight(), BufferedImage.TYPE_INT_RGB);
 		bands = original.getSampleModel().getNumBands();
 
@@ -110,6 +110,11 @@ public class CCannyEdgeDetector extends CAnalysisWorker {
 		return image;
 	}
 
+  public BufferedImage runPublic() {
+    return doInBackground();
+    
+  }
+  
 	@Override
 	public String getWorkerName() {
 		return "Edge detector";
@@ -156,4 +161,11 @@ public class CCannyEdgeDetector extends CAnalysisWorker {
 		highThreshold = 0.7f;
 		return true;
 	}
+  
+  @Override 
+  protected void done() {
+    input = null;
+    image = null;
+  }
 }
+

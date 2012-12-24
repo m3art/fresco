@@ -14,6 +14,7 @@ import fresco.swing.CContentPane.Structure;
 import fresco.swing.CDrawPanel;
 import fresco.swing.CInfoFrame;
 import fresco.swing.CPreviewBar;
+import image.converters.Crgb2grey;
 import java.awt.image.BufferedImage;
 import java.util.Calendar;
 import java.util.concurrent.CancellationException;
@@ -25,10 +26,15 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import support.regmarks.CPointPairsOverview;
 import workers.CImageWorker;
+import workers.analyse.CBestWindowSize;
+import workers.analyse.CInterestingPointsThread;
+import workers.analyse.paramObjects.CCOGParams;
 import workers.registration.CPointPairs;
 import workers.registration.CPointsAndQualities;
 import workers.registration.refpointga.CRefPointMarker;
 import workers.registration.CInterestingPoints;
+import workers.registration.CInterestingPoints.Cornerer;
+import workers.registration.CInterestingPoints.Edger;
 import workers.segmentation.CSegmentMap;
 
 /**
@@ -252,9 +258,7 @@ public class CActionManager {
 		if (dialog != null) {
 			dialog.setVisible(true);
 		}
-
-		
-    
+    imageWorker.addPropertyChangeListener(progressBar);
 		imageWorker.execute();
 	}
 
@@ -365,8 +369,37 @@ public class CActionManager {
 	}
   
   public void runMultipleIntPoints() throws InterruptedException {
+    logger.info("MIP started");
+    BufferedImage imageA = null;
+    BufferedImage imageAGreyscale = null;
+    double harrisScore = 0.0;
+    double COGScore = 0.0;
+    //double prevCOGScore = 0.0;
+    //double [] derCOGScore = new double[4];
+    double randomScore = 0.0;
+    //double distL = 0.0, perpCL = 0.0, whiteDiffL = 0.0, centerWhitenessL = 0.0;
     
+    double learnrate = 0.3;
+    int iters = 30;
+    double derStep = 1.03;
+    int setSize = CData.imagesSize()/2;
+    int paramCount = 5;
+    int [] windowSizes = new int[setSize];
+    double lambda = 0.01;
+    logger.info("easy allocation finished");
     
+    double [] growth = new double[paramCount];
+    CCOGParams [] p = new CCOGParams[paramCount+1];
+    logger.info("params allocated");
+    CInterestingPointsThread [] threadField = new CInterestingPointsThread[paramCount+1];
+    logger.info("threads allocated");
+    CInterestingPoints [] workerField = new CInterestingPoints[paramCount+1];
+    logger.info("workers allocated");
+    double [] scoreField = new double[paramCount+1];
+    logger.info("scores allocated");
+    //CCOGParams prevP = new CCOGParams();
+    
+    logger.info("calculating windowSizes of " + CData.imagesSize() + " images");
     for (int i = 0; i < CData.imagesSize(); i+=2) {
       if (CData.imagesSize() == i+1) break;
       if(!CData.input2Showed) show2ndInput();    
@@ -375,26 +408,130 @@ public class CActionManager {
       CData.showImage[2] = i+1;
       imagePanel[2].setSizeByImage();
       
-      refreshGUI();
+      imageA = CData.getImage(CData.showImage[0]).getImage();
       
+      imageAGreyscale = (new Crgb2grey()).convert(imageA);
       
-      //imageWorker = CImageWorker.createWorker(RegID.intPoints, null);
-      CInterestingPoints CW = new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), false);
-      CW.addPropertyChangeListener(progressBar);
-      CW.execute();
-      while(!CW.isDone()) {
-        Thread.sleep(1000);
-      };
-      CW = new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), true);
-      CW.addPropertyChangeListener(progressBar);
-      CW.execute();
-      while(!CW.isDone()) {
-        Thread.sleep(1000);
-      };
-      
-      refreshGUI();
+      windowSizes[i/2] = CBestWindowSize.getBestWindowSize(imageAGreyscale.getData(), 10000, 3, 25);
+      logger.info("windowsize: " + windowSizes[i/2]);
     }
-  
+    
+    for (int j = 0; j < paramCount+1; j++) {
+      p[j] = new CCOGParams();
+    }
+    
+    logger.info("finished calculating windowsizes");
+    logger.info("starting workers");
+    
+    
+    for (int iter = 0; iter < iters; iter++) {
+      logger.info("started iter " + iter);
+    
+      p[1].centerWhitenessW *= derStep;
+      p[1].normalizeWeights();
+      p[2].distW *= derStep;
+      p[2].normalizeWeights();
+      p[3].perpCW *= derStep;
+      p[3].normalizeWeights();
+      p[4].whiteDiffW *= derStep;
+      p[4].normalizeWeights();
+      p[5].thresholdq *= derStep;
+      p[5].normalizeWeights();
+      
+      
+      
+      for (int i = 0; i < CData.imagesSize(); i+=2) {
+      
+        if (CData.imagesSize() == i+1) break;
+        if(!CData.input2Showed) show2ndInput();    
+        CData.showImage[0] = i;
+        imagePanel[0].setSizeByImage();
+        CData.showImage[2] = i+1;
+        imagePanel[2].setSizeByImage();
+        for (int j = 0; j < paramCount+1; j++) {
+          p[j].windowSize = windowSizes[i/2];          
+        }
+        
+        for (int j = 0; j < paramCount+1; j++) {
+          
+          //logger.info("i. e. CW: " + p[j].centerWhitenessW + " dist: " + p[j].distW + " perpC: " + p[j].perpCW + "whiteDiff: " + p[j].whiteDiffW);
+          workerField[j] = new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), Cornerer.COG, Edger.sobel, p[j]);
+          threadField[j] = new CInterestingPointsThread(workerField[j]);
+          threadField[j].start();
+          //logger.info("started thread " + j + " in iter " + iter + " doing image " + i/2);
+        }
+       /* 
+        workerField[1] = new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), Cornerer.COG, Edger.sobel, p[1]);
+        threadField[1] = new CInterestingPointsThread(workerField[0]);
+        threadField[1].start();
+        
+        workerField[2] = new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), Cornerer.COG, Edger.sobel, p[2]);
+        threadField[2] = new CInterestingPointsThread(workerField[0]);
+        threadField[2].start();
+        
+        workerField[3] = new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), Cornerer.COG, Edger.sobel, p[3]);
+        threadField[3] = new CInterestingPointsThread(workerField[0]);
+        threadField[3].start();
+
+        workerField[4] = new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), Cornerer.COG, Edger.sobel, p[4]);
+        threadField[4] = new CInterestingPointsThread(workerField[0]);
+        threadField[4].start();
+        */
+        
+        //CW[i/2] = new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), Cornerer.COG, Edger.sobel, p[i/2]);
+        //CW[i/2].addPropertyChangeListener(progressBar);
+        //CW[i/2].execute();
+        //refreshGUI();
+        
+        for (int j = 0; j < paramCount+1; j++) {
+          try {
+            logger.info("waiting for thread " + j + " in iter " + iter + " on image " + i/2 );
+            threadField[j].join();
+          } catch(InterruptedException e) {
+            logger.log(Level.SEVERE, "Thread " + j + " interrupted" );
+          }
+          scoreField[j] += (threadField[j].result)/(double)setSize;
+            
+        }
+      }
+        logger.info("base score: " + scoreField[0]);
+        logger.info("base params: CW: " + p[0].centerWhitenessW + " dist: " + p[0].distW + " perpC: " + p[0].perpCW + " whiteDiff: " + p[0].whiteDiffW + " threshold: " + p[0].threshold);
+        
+        for (int j = 0; j < paramCount; j++) {
+          growth[j] = (scoreField[j+1] - scoreField[0]) - lambda*p[j].getRegularization();
+        }
+        //growth[1] = scoreField[2] - scoreField[0];
+        //growth[2] = scoreField[3] - scoreField[0];
+        //growth[3] = scoreField[4] - scoreField[0];
+        //growth[4] = scoreField[5] - scoreField[0];
+        for (int j = 0; j < paramCount; j++) {
+          p[j].centerWhitenessW += growth[0]*learnrate;
+          p[j].distW += growth[1]*learnrate;
+          p[j].perpCW += growth[2]*learnrate;
+          p[j].whiteDiffW += growth[3]*learnrate;
+          p[j].thresholdq += growth[4]*learnrate;
+          p[j].normalizeWeights();
+        }
+      
+        for (int j = 0; j < paramCount+1; j++) {
+          workerField[j] = null;
+          threadField[j] = null;
+          scoreField[j] = 0.0;
+        }
+        logger.info("finished iter " + iter);
+    }
+    
+    
+      
+      
+     
+      
+    
+      
+      logger.info("Harris: " + harrisScore + " COG: " + COGScore + " random: " + randomScore);
+    
+    
   
   }
+  
 }
