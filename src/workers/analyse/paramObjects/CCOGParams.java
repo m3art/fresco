@@ -61,6 +61,7 @@ public class CCOGParams extends CExtractorParams{
       centerWhitenessW /= sum;
       whiteDiffW /= sum;
       perpCW /= sum;
+      if (thresholdq < 0) this.thresholdq = 1.0/scale;
       threshold = (int)(thresholdq * scale);
     }
   }

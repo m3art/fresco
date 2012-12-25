@@ -500,7 +500,9 @@ public class CActionManager {
         
         System.out.println("base params: CW: " + p[0].centerWhitenessW + " dist: " + p[0].distW + " perpC: " + p[0].perpCW + " whiteDiff: " + p[0].whiteDiffW + " threshold: " + p[0].threshold);
         for (int j = 0; j < paramCount; j++) {
-          growth[j] = (scoreField[j+1] - scoreField[0]) - lambda*p[j].getRegularization();
+          growth[j] = (scoreField[j+1] - scoreField[0]);
+          if (growth[j] > 0) growth[j] -= lambda*p[j].getRegularization();
+          else growth[j] += lambda*p[j].getRegularization();
         }
         //growth[1] = scoreField[2] - scoreField[0];
         //growth[2] = scoreField[3] - scoreField[0];
