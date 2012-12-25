@@ -426,7 +426,7 @@ public class CActionManager {
     
     for (int iter = 0; iter < iters; iter++) {
       logger.info("started iter " + iter);
-    
+    	System.out.println("started iter " + iter);  
       p[1].centerWhitenessW *= derStep;
       p[1].normalizeWeights();
       p[2].distW *= derStep;
@@ -495,8 +495,10 @@ public class CActionManager {
         }
       }
         logger.info("base score: " + scoreField[0]);
+				System.out.println("base score: " + scoreField[0]);
         logger.info("base params: CW: " + p[0].centerWhitenessW + " dist: " + p[0].distW + " perpC: " + p[0].perpCW + " whiteDiff: " + p[0].whiteDiffW + " threshold: " + p[0].threshold);
         
+        System.out.println("base params: CW: " + p[0].centerWhitenessW + " dist: " + p[0].distW + " perpC: " + p[0].perpCW + " whiteDiff: " + p[0].whiteDiffW + " threshold: " + p[0].threshold);
         for (int j = 0; j < paramCount; j++) {
           growth[j] = (scoreField[j+1] - scoreField[0]) - lambda*p[j].getRegularization();
         }
