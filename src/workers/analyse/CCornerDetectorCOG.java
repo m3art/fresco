@@ -54,10 +54,6 @@ public class CCornerDetectorCOG extends CAnalysisWorker{
     int h = image.getHeight();
     int w = image.getWidth();
     output = out;
-    //windowSize = inputParams.windowSize;
-    //shift = windowSize/2;
-    //scale = inputParams.scale;
-    
   }
   
   public CCornerDetectorCOG(BufferedImage input) {
@@ -71,7 +67,15 @@ public class CCornerDetectorCOG extends CAnalysisWorker{
     param = inputParams;
     shift = param.windowSize/2;
   }
-  
+   public CCornerDetectorCOG(BufferedImage input, CCOGParams inputParams) {
+    param = inputParams;
+    shift = param.windowSize/2;
+    image = input;
+    int h = image.getHeight();
+    int w = image.getWidth();
+    output = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+    
+  }
   
   @Override
 	public String getWorkerName() {
@@ -126,15 +130,11 @@ public class CCornerDetectorCOG extends CAnalysisWorker{
   protected void done() {
     image = null;
     output = null;
-       
-  
   }
   
   public BufferedImage publicRun() {
     //logger.info( "running with d: " + param.distW + " pc: " + param.perpCW + " cw: " + param.centerWhitenessW + " wd: " + param.whiteDiffW);
     return doInBackground();
-    
-  
   }
   
   public double[] getCOG(int [] input, boolean dump) {
@@ -188,7 +188,6 @@ public class CCornerDetectorCOG extends CAnalysisWorker{
         COGcy += COGy;
         COGcx += COGx;
       }
-
       while ((Math.abs(COGcx) > shift) || (Math.abs(COGcy) > shift)) {
         COGcy -= COGy;
         COGcx -= COGx;
@@ -210,10 +209,7 @@ public class CCornerDetectorCOG extends CAnalysisWorker{
     }
  
     double centerWhiteness = (double)(input[(int)((param.windowSize*param.windowSize)/2)])/(param.scale);
-    /*
-    if (centerWhiteness < 0.6) centerWhiteness = 0.0001;
-    else centerWhiteness = (centerWhiteness - 0.6) * 2.5;
-    */
+    
     
 
     int rX = (int)Math.round(COGx) + shift;
@@ -223,18 +219,20 @@ public class CCornerDetectorCOG extends CAnalysisWorker{
     whiteDiff /= 512;
 
     
-     double [] ret = new double[5];
+     double [] ret = new double[6];
      
      //ret[0] = Math.pow(dist*perpC, 1-(centerWhiteness/CWI))*whiteDiff;
-     ret[0] = (dist*param.distW + perpC*param.perpCW + centerWhiteness*param.centerWhitenessW + whiteDiff*param.whiteDiffW);
-     if (ret[0] > 1) logger.info( "d: " + dist + "." + param.distW 
+     ret[0] = (dist*param.distW + perpC*param.perpCW + centerWhiteness*param.centerWhitenessW + whiteDiff*param.whiteDiffW + (dist*centerWhiteness)*param.mixW);
+     if (ret[0] > 1) logger.info( "too much in ret[0]: d: " + dist + "." + param.distW 
                                 + " pc: " + perpC + "." + param.perpCW 
                                 + " cw: " + centerWhiteness + "." + param.centerWhitenessW 
-                                + " wd: " + whiteDiff + "." + param.whiteDiffW);
+                                + " wd: " + whiteDiff + "." + param.whiteDiffW
+                                + " m: " + dist*centerWhiteness + "." + param.mixW);
      ret[1] = centerWhiteness;
      ret[2] = dist;
      ret[3] = whiteDiff;
      ret[4] = perpC;
+     ret[5] = dist*centerWhiteness*perpC*whiteDiff;
      return ret;
      
   }

@@ -49,6 +49,7 @@ public interface IAction {
     intPoints,
     harris,
     COG,
+    ransac,
 		// correction
 		ahe,
 		colorShift,

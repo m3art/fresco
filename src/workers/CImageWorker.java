@@ -11,7 +11,9 @@ import javax.swing.JDialog;
 import javax.swing.SwingWorker;
 import support.regmarks.CPointPairsOverview;
 import workers.analyse.*;
+import workers.analyse.paramObjects.CCOGParams;
 import workers.analyse.paramObjects.CHarrisParams;
+import workers.analyse.paramObjects.CLoGParams;
 import workers.correction.CAdaptiveHistogramEnhancing;
 import workers.correction.CColorShiftWorker;
 import workers.registration.CInterestingPoints;
@@ -19,6 +21,7 @@ import workers.registration.CInterestingPoints.Cornerer;
 import workers.registration.CInterestingPoints.Edger;
 import workers.registration.CPerspectiveTransformationWorker;
 import workers.registration.CPointPairs;
+import workers.registration.CRansacRegister;
 import workers.registration.refpointga.CRefPointMarker;
 import workers.segmentation.CColorQuantizer;
 import workers.tools.CRotation;
@@ -56,6 +59,7 @@ public abstract class CImageWorker<T, V> extends SwingWorker<T, V> implements II
 	 * @return created imageWorker
 	 */
 	public static CImageWorker createWorker(RegID id, Object[] params) {
+                
 		switch (id) {
 			case laplace:
 				return new CLaplacian(CData.getImage(CData.showImage[0]).getImage());
@@ -88,17 +92,23 @@ public abstract class CImageWorker<T, V> extends SwingWorker<T, V> implements II
 				CPointPairs pairs = new CPointPairs(CData.getImage(CData.showImage[0]).getMarks(), CData.getImage(CData.showImage[2]).getMarks());
 				return new CPointPairsOverview(pairs, CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage());
       case intPoints:
-        CHarrisParams pi = new CHarrisParams();
-        return new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), Cornerer.harris, Edger.LOG, pi);
+        CCOGParams pic = new CCOGParams();
+        CLoGParams pe = new CLoGParams();
+        return new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), Cornerer.COG, Edger.LOG, pic, pe, 0, 0);
       case harris:
         CHarrisParams ph = new CHarrisParams();
         return new CHarris(CData.getImage(CData.showImage[0]).getImage(), ph);
       case COG:
-        return new CCornerDetectorCOG(CData.getImage(CData.showImage[0]).getImage());
-			default:
-				return null;
-		}
-	}
+          CCOGParams pc = new CCOGParams();
+        return new CCornerDetectorCOG(CData.getImage(CData.showImage[0]).getImage(), pc);
+      case ransac:
+        
+        return new CRansacRegister(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage());
+      default:
+
+	return null;
+       }
+}
 
 	public abstract String getTypeName();
 

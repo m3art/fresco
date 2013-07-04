@@ -23,8 +23,10 @@ public class CHarrisParams extends CExtractorParams {
   }
   
   public CHarrisParams() {
-    this.windowSize = 13;
-    this.sigma = windowSize/4;
+    this.windowSize = 19;
+    this.sigma = 1.5;
+    this.threshold = 0;
+    this.sensitivity = 0.0005;
   }
   
 }

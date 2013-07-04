@@ -165,6 +165,7 @@ public class CUserActionListener implements ActionListener, ItemListener {
         case intPoints:
         case harris:
         case COG:
+        case ransac:
           manager.runImageWorker(id, null);
 					break;
 			}

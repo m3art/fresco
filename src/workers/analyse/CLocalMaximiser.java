@@ -33,43 +33,84 @@ public class CLocalMaximiser {
     
     int [] centerpx = new int[3];
     int [] testpx = new int[3];
+    int [] blackpx = new int[3];
+    blackpx[0] = 0;
+    blackpx[1] = 0;
+    blackpx[2] = 0;
+    int [] whitepx = new int[3];
+    whitepx[0] = 255;
+    whitepx[1] = 255;
+    whitepx[2] = 255;
     
+    boolean[] isMax = new boolean[w*h];
     for (int i = 0; i < w; i++) {
       for (int j = 0; j < h; j++) {
         centerpx = inputData.getPixel(i, j, centerpx);
         outputData.setPixel(i, j, centerpx);
+        isMax[j*w+i] = false;
       }
     }
-    
-    
-    
     int locmaxdim = windowSize/2;
     for (int i = locmaxdim; i < w-locmaxdim; i++) {
       for (int j = locmaxdim; j < h-locmaxdim; j++) {
         centerpx = inputData.getPixel(i, j, centerpx);
-        //boolean isMax = true;
+        isMax[j*w+i] = true;
+        
         for(int is = -locmaxdim; is <= locmaxdim; is++) {
           for(int js = -locmaxdim; js <= locmaxdim; js++) {
             if ((is == 0) && (js == 0)) continue;
             testpx = inputData.getPixel(i+is, j+js, testpx);
             if (testpx[0] > centerpx[0]) {
-              centerpx[1] = centerpx[2] = 0;
-              outputData.setPixel(i, j, centerpx);
+               isMax[j*w+i] = false;
             }
-            
-            
           }
         }
       }
     }
-    for (int x = 0; x < input.getWidth()-locmaxdim; x++) {
-      for (int y = 0; y < input.getHeight()-locmaxdim; y++) {
-        centerpx = outputData.getPixel(x, y, centerpx);
-        if (centerpx[1] == 0) centerpx[0] = 0;
-        outputData.setPixel(x, y, centerpx);
+    
+    for (int x = 0; x < input.getWidth(); x++) {
+      for (int y = 0; y < input.getHeight(); y++) {
+        if (isMax[y*w+x]) {
+          int[] origpx = new int[3];
+          origpx = inputData.getPixel(x, y, origpx);
+          outputData.setPixel(x, y, origpx);
+        }
+        else {
+          outputData.setPixel(x, y, blackpx);
+        }
       }
     }
-  
+    
+    for (int i = locmaxdim; i < w-locmaxdim; i++) {
+      for (int j = locmaxdim; j < h-locmaxdim; j++) {
+        centerpx = inputData.getPixel(i, j, centerpx);
+        for(int is = 0; is <= 1; is++) {
+          for(int js = 0; js <= 1; js++) {
+           testpx = outputData.getPixel(i+is, j+js, testpx);
+            if ((is == 0) && (js == 0)) continue;
+            else if (testpx[0] == centerpx[0]) {
+               isMax[j*w+i] = false;
+            }
+           
+          }
+        }
+      }
+    }
+    for (int x = 0; x < input.getWidth(); x++) {
+      for (int y = 0; y < input.getHeight(); y++) {
+        if (isMax[y*w+x]) {
+          int[] origpx = new int[3];
+          origpx = inputData.getPixel(x, y, origpx);
+          outputData.setPixel(x, y, origpx);
+        }
+        else {
+          outputData.setPixel(x, y, blackpx);
+        }
+      }
+    }
+    
+    output.setData(outputData);
     return output;
   }
 }
+

@@ -31,7 +31,7 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 	// edit menu items
 	CMenuItem fixImage, fixSegments, rename, capture;
 	// analysis items
-	CMenuItem diff, sobel, laplacian, wavelets, mutualInfo, pca, patternAnalysis, intPoints, harris, COG;
+	CMenuItem diff, sobel, laplacian, wavelets, mutualInfo, pca, patternAnalysis, intPoints, harris, COG, ransac;
 	// correction items
 	CMenuItem ahe, colorShift;
 	// transform items
@@ -219,6 +219,10 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
     COG = new CMenuItem("COG corner detector", RegID.COG);
 		COG.addActionListener(CData.userActionListener);
 		analysisMenu.add(COG);
+                
+    ransac = new CMenuItem("Ransac registrator", RegID.ransac);
+		ransac.addActionListener(CData.userActionListener);
+		analysisMenu.add(ransac);
 	}
 
 	public void checkEnabled() {
@@ -234,6 +238,7 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 			rotateLeft.setEnabled(false);
 			rotateRight.setEnabled(false);
 			segmentationMenu.setEnabled(false);
+                        
 		} else {
 			save.setEnabled(true);
 			imageInfo.setEnabled(true);
@@ -245,12 +250,15 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 			rotateLeft.setEnabled(true);
 			rotateRight.setEnabled(true);
 			segmentationMenu.setEnabled(true);
+                        
 		}
     if ((CData.showImage[0] != -1) && (CData.showImage[2] != -1)) { 
       intPoints.setEnabled(true);
+      ransac.setEnabled(true);
     }
     else {
       intPoints.setEnabled(true);
+      ransac.setEnabled(false);
     }
 
 		if (CData.output == null) {

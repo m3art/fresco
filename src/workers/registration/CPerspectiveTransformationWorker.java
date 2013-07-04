@@ -83,4 +83,10 @@ public class CPerspectiveTransformationWorker extends CRegistrationWorker {
 	public String getWorkerName() {
 		return "Perspective";
 	}
+        
+        public BufferedImage runPublic() {
+          return doInBackground();
+        
+        
+        }
 }
