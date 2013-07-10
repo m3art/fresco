@@ -57,7 +57,7 @@ import workers.analyse.paramObjects.CLoGParams;
 //public class CInterestingPoints extends CImageWorker<Double, Void> {
 public class CInterestingPoints extends CAnalysisWorker {
   private static final Logger logger = Logger.getLogger(CImageWorker.class.getName());
-  public static int topPts = 160; //TODO parametrize
+  public static int topPts = 360; //TODO parametrize
   private BufferedImage imageA, imageB, output;
   private CPointPairs pairsOut;
   private CPointsAndQualities ptqA, ptqB;
@@ -68,8 +68,8 @@ public class CInterestingPoints extends CAnalysisWorker {
   private int shift;
   private Cornerer cornerer;
   private Edger edger;
-  private CExtractorParams paramC;
-  private CEdgerParams paramE;
+  public CExtractorParams paramC;
+  public CEdgerParams paramE;
   private int tid;
   private int iid;
   
@@ -300,8 +300,8 @@ public class CInterestingPoints extends CAnalysisWorker {
     int[] px = new int[3];
     CPointsAndQualities tmpPts = new CPointsAndQualities();
     
-    int subW = 10;
-    int subH = 8;
+    int subW = 4;
+    int subH = 3;
     
     int ptsPerSub = requestedPts/(subW*subH);
     
