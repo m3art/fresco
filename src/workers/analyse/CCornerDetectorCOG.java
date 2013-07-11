@@ -19,12 +19,9 @@ import workers.analyse.paramObjects.CCOGParams;
  */
 
 public class CCornerDetectorCOG extends CAnalysisWorker{
-  //public static int windowSize = 13;
+ 
   private int shift;
-  //public static int scale = 256;
-  //public static double CWI = 1.7;
-  //public int treshold = 20;
-  
+ 
   public CCOGParams param;
   
   public BufferedImage image;
@@ -67,7 +64,7 @@ public class CCornerDetectorCOG extends CAnalysisWorker{
     param = inputParams;
     shift = param.windowSize/2;
   }
-   public CCornerDetectorCOG(BufferedImage input, CCOGParams inputParams) {
+  public CCornerDetectorCOG(BufferedImage input, CCOGParams inputParams) {
     param = inputParams;
     shift = param.windowSize/2;
     image = input;

@@ -45,7 +45,16 @@ public class CRansacRegister extends CAnalysisWorker{
   private Point2D.Double[] sensedInit = new Point2D.Double[4];
   private Point2D.Double[] refTop = new Point2D.Double[4];
   private Point2D.Double[] sensedTop = new Point2D.Double[4];
-  private CPerspectiveTransformation topTrans = new CPerspectiveTransformation();;
+  private CPerspectiveTransformation topTrans = new CPerspectiveTransformation();
+  LinkedList<Point2D.Double> inliersRef = new LinkedList<>();
+  LinkedList<Point2D.Double> inliersSensed = new LinkedList<>();
+  LinkedList<Point2D.Double> inliersRefMSS = new LinkedList<>();
+  LinkedList<Point2D.Double> inliersSensedMSS = new LinkedList<>();
+  CPerspectiveTransformation maxTrans = new CPerspectiveTransformation();
+    int iters;
+    int inlierThresh;
+    int CSThresh;
+    
         
   
   public CRansacRegister(BufferedImage reference, BufferedImage sensed) {
@@ -73,7 +82,9 @@ public class CRansacRegister extends CAnalysisWorker{
     sensedInitIdx[0] = sensedInitIdx[1] = sensedInitIdx[2] = sensedInitIdx[3] = -1;
     refInit = new Point2D.Double[4];
     sensedInit = new Point2D.Double[4];
-    
+    iters = 1500;
+    inlierThresh = (inputA.getHeight()+inputB.getWidth())/40;
+    CSThresh = ptsA.size() < ptsB.size() ? ptsA.size()/2 : ptsB.size()/2;
     
     
     
@@ -134,8 +145,9 @@ public class CRansacRegister extends CAnalysisWorker{
   };
   
   private boolean getTopParams() {
-  LinkedList<Point2D.Double> inliersRefTop = new LinkedList<Point2D.Double>();
-      LinkedList<Point2D.Double> inliersSensedTop = new LinkedList<Point2D.Double>();            
+    logger.info("getting top params");
+    LinkedList<Point2D.Double> inliersRefTop = new LinkedList<Point2D.Double>();
+    LinkedList<Point2D.Double> inliersSensedTop = new LinkedList<Point2D.Double>();            
     for (int p = 0; p < 4; p++) {
           
       double maxCor = 0.0;
@@ -185,10 +197,7 @@ public class CRansacRegister extends CAnalysisWorker{
       
     }
   
-  
-  
-  
-  private boolean getInitParams  () {
+  private boolean getInitParams() {
       logger.info("getting params");
       double maxL = inputA.getWidth();
       double maxR = -1.0;
@@ -293,62 +302,8 @@ public class CRansacRegister extends CAnalysisWorker{
   
   };
   
-  
-  @Override
-  protected BufferedImage doInBackground() {
-    
-   
-    getCorrs();
-    boolean enoughPts = getInitParams();
-    if (!(enoughPts)) return inputA;
-    
-    
-    CPerspectiveTransformation trans = new CPerspectiveTransformation();
-    //trans.setParameters(refInit[0], sensedInit[0], refInit[1], sensedInit[1], refInit[2], sensedInit[2], refInit[3], sensedInit[3]);
-    //trans.print();
-    trans.set(refInit, sensedInit);
-    trans.print();
-    Point size = new Point(inputA.getWidth(), inputA.getHeight());
-    
-    
-    BufferedImage output = new BufferedImage(size.x, size.y, inputB.getType());
-    WritableRaster outRaster = output.getRaster();
-    Raster in = inputB.getData();
-    WritableRaster sensedRaster = inputB.getRaster();
-    WritableRaster refRaster = inputA.getRaster();
-    /*
-    int[] red = new int[3];
-    red[0] = 255;
-    red[1] = 0;
-    red[2] = 0;
-    for (int i = 0; i < 4; i++) {
-      red[0] = ((i%2)+1)*80;
-      red[1] = ((i%2)+2)*80;
-      
-      refRaster.setPixel((int)refInit[i].x, (int)refInit[i].y, red);
-      sensedRaster.setPixel((int)sensedInit[i].x, (int)sensedInit[i].y, red);
-      outRaster.setPixel((int)sensedInit[i].x, (int)sensedInit[i].y, red);
-      outRaster.setPixel((int)refInit[i].x, (int)refInit[i].y, red);
-    }*/
-    
-
-    LinkedList<Point2D.Double> inliersRef = new LinkedList<Point2D.Double>();
-    LinkedList<Point2D.Double> inliersSensed = new LinkedList<Point2D.Double>();
-    LinkedList<Point2D.Double> inliersRefMSS = new LinkedList<Point2D.Double>();
-    LinkedList<Point2D.Double> inliersSensedMSS = new LinkedList<Point2D.Double>();
-    CPerspectiveTransformation maxTrans = new CPerspectiveTransformation();
-    maxTrans.copy(trans);
-    double maxInliers = 0.0;
-    logger.info("total pts: refPts: " + ptsA.size() + " sensedPts: " + ptsB.size() + " total: " + ptsA.size()*ptsB.size() );
-    //find inliers
-    int iters = 150;
-    int inlierThresh = (inputA.getHeight()+inputB.getWidth())/20;
-    for (int iter = 0; iter < iters; iter++) {
-      inliersRef.clear();
-      inliersSensed.clear();
-      inliersRefMSS.clear();
-      inliersSensedMSS.clear();
-      double inlierCount = 0;
+  private double getInliers(CPerspectiveTransformation trans) {
+    double inlierCount = 0;
       boolean[] sensedUsed = new boolean[ptsB.size()];
       for (int i = 0; i < ptsA.size(); i++) {
         Point2D.Double refPt = ptsA.getPoint(i);
@@ -370,73 +325,166 @@ public class CRansacRegister extends CAnalysisWorker{
         }
        
       }
-      
-      if (inliersRef.size() >= 4) {
-        if (inlierCount > maxInliers) {
-          maxTrans.copy(trans);
-          maxInliers = inlierCount;
+      return inlierCount;
+  }
+  
+  private boolean getRandomParams( double corrThresh) {
+    if ((ptsA.size() < 4) || (ptsB.size() < 4)) return false;
+    for (int p = 0; p < 4; p++) {
+      int indexA;
+      int indexB;
+      int maxTries = 500;
+      int tries = 0;
+      double maxCorr = 0.0;
+      int maxA = 0;
+      int maxB = 0;
+     
+      do {
+        tries++;
+        
+        
+        indexA = (int)((double)ptsA.size()*Math.random());
+        while (indexA == refInitIdx[0] || indexA == refInitIdx[1] || indexA == refInitIdx[2] || indexA == refInitIdx[3] ) {
+          indexA = (int)((double)ptsA.size()*Math.random());
+        }
+        indexB = (int)((double)ptsB.size()*Math.random());;
+        while (indexB == sensedInitIdx[0] || indexB == sensedInitIdx[1] || indexB == sensedInitIdx[2] || indexB == sensedInitIdx[3] ) {
+        indexB = (int)((double)ptsB.size()*Math.random());
+        if (indexA == ptsA.size()) indexA--;
+        if (indexB == ptsB.size()) indexA--;
+        if (maxCorr < correlations[indexA][indexB]) {
+          maxA = indexA;
+          maxB = indexB;
+          maxCorr = correlations[indexA][indexB];
         }
         
-        /*logger.info("getting MSS from CS");
-        for (int pts = 0; pts < 4; pts++) {
-            int index = (int)((inliersRef.size())*Math.random());
-            if (index == inliersRef.size()) index--;
-            logger.info("random select: index " + index + " from " + inliersRef.size());
-            inliersRefMSS.add(inliersRef.get(index));
-            inliersRef.remove(index);
-            inliersSensedMSS.add(inliersSensed.get(index));
-            inliersSensed.remove(index);
-        }*/
-        trans.set(inliersRef, inliersSensed);
+        }
       }
-      else {
-        logger.info("inliers found: " + inlierCount);
-        logger.info("iter " + iter + ": "); 
-        logger.info("dead end");
-        break;
+      while ((maxCorr < corrThresh) && (tries < maxTries));
+        logger.info("m: " + maxCorr);
+      if (maxCorr >= corrThresh) {
+        logger.info("not mtfail");
+        
       }
-      logger.info("inliers found: " + inlierCount);
-      logger.info("iter " + iter + ": "); 
-      //trans.print();
+      
+      if (maxCorr <= 0.0) {
+        maxA = indexA;
+        maxB = indexB;
+      }
+      
+      refInit[p] = ptsA.getPoint(maxA);
+      refInitIdx[p] = maxA;
+      sensedInit[p] = ptsB.getPoint(maxB);
+      sensedInitIdx[p] = maxB;
     }
     
-
+    
+    
+    return true;
+  }
+  
+  @Override
+  protected BufferedImage doInBackground() {
+    
+    getCorrs();
+    boolean enoughPts = getInitParams();
+    if (!(enoughPts)) return inputA;
+    
+    
+    CPerspectiveTransformation trans = new CPerspectiveTransformation();
+    trans.set(refInit, sensedInit);
+    trans.print();
+    
+    double inlierCountInit = getInliers(trans);
+    
+    
     enoughPts = getTopParams();
     if (!(enoughPts)) topTrans.copy(trans);
     topTrans.print();
     
-    double inlierCount = 0;
-    boolean[] sensedUsed = new boolean[ptsB.size()];
-    for (int i = 0; i < ptsA.size(); i++) {
-      Point2D.Double refPt = ptsA.getPoint(i);
-      for (int j = 0; j < ptsB.size(); j++) {
-            if (sensedUsed[j]) continue;
-          Point2D.Double sensedPt = ptsB.getPoint(j);
-          Point2D.Double transformedRefPt = topTrans.getProjected(refPt);
-          double dist = Math.sqrt(   (sensedPt.x-transformedRefPt.x)*(sensedPt.x-transformedRefPt.x)
-                                    + (sensedPt.y-transformedRefPt.y)*(sensedPt.y-transformedRefPt.y));
-          if (dist < inlierThresh) {
-            inlierCount += (ptsA.getQuality(i) + ptsB.getQuality(j))/2;
-            sensedUsed[j] = true;
-            inliersRef.add(refPt);
-            inliersSensed.add(sensedPt);
-            //logger.info("got inlier");
-            break;
-            
-          }
-       }
-    }
-      
+    double inlierCountTop = getInliers(topTrans);
     
-    logger.info("top trans inlier count: " + inlierCount);
+    if (inlierCountTop > inlierCountInit) {
+      trans.copy(topTrans);
+      logger.info("replacing universal transformation with top transformation");
+      
+    }
+    
+    
+    
+    Point size = new Point(inputA.getWidth(), inputA.getHeight());
+    
+    BufferedImage output = new BufferedImage(size.x, size.y, inputB.getType());
+    WritableRaster outRaster = output.getRaster();
+    Raster in = inputB.getData();
+    /*WritableRaster sensedRaster = inputB.getRaster();
+    WritableRaster refRaster = inputA.getRaster();
+    
+    int[] red = new int[3];
+    red[0] = 255;
+    red[1] = 0;
+    red[2] = 0;
+    for (int i = 0; i < 4; i++) {
+      red[0] = ((i%2)+1)*80;
+      red[1] = ((i%2)+2)*80;
+      
+      refRaster.setPixel((int)refInit[i].x, (int)refInit[i].y, red);
+      sensedRaster.setPixel((int)sensedInit[i].x, (int)sensedInit[i].y, red);
+      outRaster.setPixel((int)sensedInit[i].x, (int)sensedInit[i].y, red);
+      outRaster.setPixel((int)refInit[i].x, (int)refInit[i].y, red);
+    }*/
+    
+
+
+    maxTrans.copy(trans);
+    double maxInliers = 0.0;
+    logger.info("total pts: refPts: " + ptsA.size() + " sensedPts: " + ptsB.size() + " total: " + ptsA.size()*ptsB.size() );
+    
+    for (int iter = 0; iter < iters; iter++) {
+      inliersRef.clear();
+      inliersSensed.clear();
+      inliersRefMSS.clear();
+      inliersSensedMSS.clear();
+      
+       double inlierCount = getInliers(trans);
+       
+      
+      
       if (inlierCount > maxInliers) {
-        
-        maxTrans.copy(topTrans);
+          maxTrans.copy(trans);
+          maxInliers = inlierCount;
+        }
+      if (inliersRef.size() >= CSThresh) {
+        break;
         
       }
+      /*else {
+        logger.info("iter " + iter + ": inliers found: " + inlierCount);
+        //logger.info("iter " + iter + ": "); 
+        logger.info("dead end");
+        break;
+      }*/
+      double corrThresh = 1-((double)iter/iters) ;
+      getRandomParams(corrThresh);
+     trans.set(refInit, sensedInit);
+             
+     logger.info("iter " + iter + ": inliers found: " + inlierCount + " corrT: " + corrThresh);
+      //logger.info("iter " + iter + ": "); 
+      //trans.print();
+    }
+    getInliers(maxTrans);
+     trans.set(inliersRef, inliersSensed);
+      trans.print();
+    
+    
+    
       
-      
-      
+    
+//    logger.info("top trans inlier count: " + inlierCount);
+//    if (inlierCount > maxInliers) {
+//      maxTrans.copy(topTrans);
+//    }
+
     int x, y;
     int[] pixel = new int[3], black = {0, 0, 0};
     Point2D.Double ref;
@@ -448,7 +496,6 @@ public class CRansacRegister extends CAnalysisWorker{
     }
     System.out.println("");
     //maxTrans.print();
-
     for (x = 0; x < size.x; x++) {
             for (y = 0; y < size.y; y++) {
                     ref = maxTrans.getProjected(new Point2D.Double(x, y));
