@@ -90,7 +90,11 @@ public class CImageFile {
 			int sepPosition = userString.lastIndexOf(".");
 
 			if (sepPosition == -1) { // no
-				extension = fc.getFileFilter().getDescription();
+				if (fc.getFileFilter() == null) {
+					extension = "bmp";
+				} else {
+					extension = fc.getFileFilter().getDescription();
+				}
 			} else {
 				extension = userString.toString().substring(sepPosition + 1);
 
