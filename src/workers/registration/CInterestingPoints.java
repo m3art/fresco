@@ -57,7 +57,7 @@ import workers.analyse.paramObjects.CLoGParams;
 //public class CInterestingPoints extends CImageWorker<Double, Void> {
 public class CInterestingPoints extends CAnalysisWorker {
   private static final Logger logger = Logger.getLogger(CImageWorker.class.getName());
-  public static int topPts = 120; //TODO parametrize
+  public static int topPts = 1200; //TODO parametrize
   private BufferedImage imageA, imageB, output;
   private CPointPairs pairsOut;
   private CPointsAndQualities ptqA, ptqB;
@@ -189,7 +189,7 @@ public class CInterestingPoints extends CAnalysisWorker {
   }
 
   
-  private void addTopPtsToPTQ(WritableRaster corneredInput, int requestedPts, CPointsAndQualities PTQ) {
+  private void addTopPtsToPTQ(WritableRaster corneredInput, int requestedPts, CPointsAndQualities PTQ, int TLW, int TLH) {
       CPointsAndQualities tmp = new CPointsAndQualities();
       int w = corneredInput.getWidth();
       int h = corneredInput.getHeight();
@@ -198,22 +198,24 @@ public class CInterestingPoints extends CAnalysisWorker {
       for (int i = 0; i < 256; i++) {
         intHist[i] = 0;
       }
-      logger.info("getting hist");
+      //logger.info("getting hist");
       for (int a = 0; a < w; a++) {
         for (int b = 0; b < h; b++) {
           corneredInput.getPixel(a, b, px);
           intHist[px[0]]++;
         }
       }
-      logger.info("got hist");
+      //logger.info("got hist");
       int ptsSoFar = 0;
       int histIdx = 255;
       while (ptsSoFar < requestedPts) {
         ptsSoFar += intHist[histIdx];
         histIdx--;    
       }
-      logger.info("hist idx at: " + histIdx);
-      
+      //logger.info("hist idx at: " + histIdx);
+      if (histIdx == -1) {
+        histIdx = 1;
+      }
       for (int a = 0; a < w; a++) {
         for (int b = 0; b < h; b++) {
           corneredInput.getPixel(a, b, px);
@@ -234,11 +236,11 @@ public class CInterestingPoints extends CAnalysisWorker {
             minindex = i;
           }
         }
-        logger.info("removing" + minindex + " with quality: +" + minq );
+        //logger.info("removing" + minindex + " with quality: +" + minq );
         tmp.removePtq(minindex);   
       }
       for (int pt = 0; pt < tmp.size(); pt++) {
-        PTQ.addPoint(tmp.getPoint(pt), tmp.getQuality(pt));
+        PTQ.addPoint(new Point2D.Double(tmp.getPoint(pt).x+TLW, tmp.getPoint(pt).y+TLH), tmp.getQuality(pt));
       }
   
   }
@@ -262,15 +264,20 @@ public class CInterestingPoints extends CAnalysisWorker {
     for (int sub = 0; sub < (gridW*gridH); sub++) {
       int topLeftW = (sub % gridW) * wStep;
       int topLeftH = (int)(sub / gridW) * hStep;
-      addTopPtsToPTQ(corneredInput.createWritableChild(topLeftW, topLeftH, wStep, hStep, 0, 0, null), ptsPerSub, tmpPts);
+      
+      
+      addTopPtsToPTQ(corneredInput.createWritableChild(topLeftW, topLeftH, wStep, hStep, 0, 0, null), ptsPerSub, tmpPts, topLeftW, topLeftH);
+      
     }
   
+   
     return tmpPts;
   }
   
   public CPointsAndQualities getPoints(BufferedImage input) {
     CPointsAndQualities retPts = new CPointsAndQualities();
-    retPts = selectPts(getResult(input).getRaster(), topPts, 4, 3);
+    retPts = selectPts(getResult(input).getRaster(), topPts, 8, 6);
+  
     return retPts;
     
   }

@@ -1,6 +1,8 @@
 
 package workers.registration;
 
+import Jama.EigenvalueDecomposition;
+import Jama.Matrix;
 import image.converters.CNormalization;
 import image.converters.Crgb2grey;
 import java.awt.Point;
@@ -8,6 +10,7 @@ import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.logging.Logger;
 import utils.geometry.CPerspectiveTransformation;
@@ -51,6 +54,7 @@ public class CRansacRegister extends CAnalysisWorker{
   LinkedList<Point2D.Double> inliersRefMSS = new LinkedList<>();
   LinkedList<Point2D.Double> inliersSensedMSS = new LinkedList<>();
   CPerspectiveTransformation maxTrans = new CPerspectiveTransformation();
+    int channelCount = 8; 
     int iters;
     int inlierThresh;
     int CSThresh;
@@ -90,57 +94,598 @@ public class CRansacRegister extends CAnalysisWorker{
     
   }
   
+    
+  
+  public static int[] getMserPlus(int[] surround, int w, int h) {
+    
+    int[] MSERtmp = new int[w*h];
+    boolean[] isBoundary = new boolean[w*h];
+    LinkedList<Point2D.Double> boundary = new LinkedList<>();
+    LinkedList<Point2D.Double> nextBoundary = new LinkedList<>();
+    for (int i = 0; i < w*h; i++) {
+      MSERtmp[i] = -1;
+    }
+    boundary.addLast(new Point2D.Double((int)(w/2), (int)(h/2)));
+    int centerPx = (int)surround[((h/2) * w) + (w/2)];
+    MSERtmp[(h/2)*w  + (w/2)] = centerPx;
+    
+    int[] sizes = new int[centerPx+1];
+    int testPx = 0;
+    
+    sizes[0] = 1;
+    int lastSize = 1;
+    boolean touch = false;
+    for (int intensity = centerPx; intensity >= 0; intensity--) {
+     int i =0;
+     
+     while(boundary.size() > 0) {
+        i++;
+        
+        Point2D.Double current = boundary.removeFirst();
+        
+        int currentPx = (int)surround[(int)current.y * w + (int)current.x];   
+        int curindex = (int)current.y * w + (int)current.x;
+        isBoundary[curindex] = false;
+        if (currentPx < intensity) {
+          nextBoundary.addLast(current);
+        }
+        else {
+          if (current.x == 0 || current.y == 0 || current.x == w-1 || current.y == h-1) {
+            touch = true;
+          }
+          if (MSERtmp[(int)current.y * w + (int)current.x] == -1) {
+            lastSize++;
+         }
+          MSERtmp[(int)current.y * w + (int)current.x] = intensity;
+          
+          if (current.x > 0) {
+            int idx = (int)current.y * w + (int)current.x-1;
+            testPx = (int)surround[idx];
+            if (intensity <= testPx && MSERtmp[idx] == -1 && !isBoundary[idx]) {
+              isBoundary[idx] = true;
+              boundary.addLast(new Point2D.Double(current.x-1, current.y));
+            }
+            if (intensity > testPx) nextBoundary.addLast(new Point2D.Double(current.x-1, current.y));
+          }
+          if (current.x < w-1) {
+            int idx = (int)current.y * w + (int)current.x+1;
+            testPx = (int)surround[idx];
+            if (intensity <= testPx && MSERtmp[idx] == -1 && !isBoundary[idx]) {
+              isBoundary[idx] = true;
+              boundary.addLast(new Point2D.Double(current.x+1, current.y));
+            }
+            if (intensity > testPx) nextBoundary.addLast(new Point2D.Double(current.x+1, current.y));
+          }
+          if (current.y > 0) {
+            int idx = (int)(current.y-1) * w + (int)current.x;
+            testPx = (int)surround[idx];
+            if (intensity <= testPx && MSERtmp[idx] == -1 && !isBoundary[idx]) {
+              isBoundary[idx] = true;
+              boundary.addLast(new Point2D.Double(current.x, current.y-1));
+            }
+            if (intensity > testPx) nextBoundary.addLast(new Point2D.Double(current.x, current.y-1));
+          }
+          if (current.y < h-1) {
+            int idx = (int)(current.y+1) * w + (int)current.x;
+            testPx = (int)surround[idx];
+            if (intensity <= testPx && MSERtmp[idx] == -1 && !isBoundary[idx]) {
+              isBoundary[idx] = true;
+              boundary.addLast(new Point2D.Double(current.x, current.y+1));
+            }
+            if (intensity > testPx) nextBoundary.addLast(new Point2D.Double(current.x, current.y+1));
+          }
+        }
+      }
+      
+      while(nextBoundary.size() > 0) {
+        boundary.addLast(nextBoundary.removeFirst());
+      }
+      if (!touch) sizes[intensity] = lastSize;
+      else sizes[intensity] = 0;
+    }
+    int delta = 12;
+    int maxStableSize = centerPx/2;
+    double minSizeChange = w*h;
+    for (int i = delta; i < centerPx-delta; i++) {
+      
+      //Do not allow too big regions - boundary effect!!!
+      //Do not allow too small regions - one pixel is not an mser
+      if (sizes[i] >= (w*h)/2 || sizes[i] < 5) {
+        continue;
+       }
+      double sizeChange = (sizes[i-delta] - sizes[i+delta])/(double)sizes[i];
+      if (sizeChange < minSizeChange) {
+        minSizeChange = sizeChange;
+        maxStableSize = i;
+      }
+      
+    }
+    if (minSizeChange == w*h) {
+
+     throw new java.lang.RuntimeException("no mser found");
+    }
+    //logger.info("Mser size: " + maxStableSize);
+    for(int i = 0; i < w*h; i++) {
+      if(MSERtmp[i] >= maxStableSize) MSERtmp[i] = 1;
+      else MSERtmp[i] = 0;
+    }
+    
+    return MSERtmp;
+  
+  }
+  public static int[] getMserMinus(int[] surround, int w, int h) {
+    
+    int[] MSERtmp = new int[w*h];
+    boolean[] isBoundary = new boolean[w*h];
+
+    LinkedList<Point2D.Double> boundary = new LinkedList<>();
+    LinkedList<Point2D.Double> nextBoundary = new LinkedList<>();
+    for (int i = 0; i < w*h; i++) {
+      MSERtmp[i] = -1;
+    }
+    boundary.addLast(new Point2D.Double((int)(w/2), (int)(h/2)));
+    int centerPx = (int)surround[((h/2) * w) + (w/2)];
+    MSERtmp[(h/2)*w  + (w/2)] = centerPx;
+    
+    int[] sizes = new int[256];
+    int testPx = 0;
+    
+    sizes[0] = 1;
+    int lastSize = 1;
+    boolean touch = false;
+    for (int intensity = centerPx; intensity <= 255; intensity++) {
+     
+     while(boundary.size() > 0) {
+        
+        Point2D.Double current = boundary.removeFirst();
+        int currentPx = (int)surround[(int)current.y * w + (int)current.x];   
+        int curindex = (int)current.y * w + (int)current.x;
+        isBoundary[curindex] = false;
+        if (currentPx > intensity) {
+          nextBoundary.addLast(current);
+        }
+        
+        else {
+          if (current.x == 0 || current.y == 0 || current.x == w-1 || current.y == h-1) {
+            touch = true;
+          }
+          if (MSERtmp[(int)current.y * w + (int)current.x] == -1) {
+            lastSize++;
+          }
+          MSERtmp[(int)current.y * w + (int)current.x] = intensity;
+          
+          if (current.x > 0) {
+            int idx = (int)current.y * w + (int)current.x-1;
+            testPx = (int)surround[idx];
+            if (intensity >= testPx && MSERtmp[idx] == -1 && !isBoundary[idx]) {
+              isBoundary[idx] = true;
+              boundary.addLast(new Point2D.Double(current.x-1, current.y));
+            }
+            if (intensity < testPx) nextBoundary.addLast(new Point2D.Double(current.x-1, current.y));
+          }
+          if (current.x < w-1) {
+            int idx = (int)current.y * w + (int)current.x+1;
+            testPx = (int)surround[idx];
+            if (intensity >= testPx && MSERtmp[idx] == -1 && !isBoundary[idx]) {
+              isBoundary[idx] = true;
+              boundary.addLast(new Point2D.Double(current.x+1, current.y));
+            }
+            if (intensity < testPx) nextBoundary.addLast(new Point2D.Double(current.x+1, current.y));
+          }
+          if (current.y > 0) {
+            int idx = (int)(current.y-1) * w + (int)current.x;
+            testPx = (int)surround[idx];
+            if (intensity >= testPx && MSERtmp[idx] == -1 && !isBoundary[idx]) {
+              isBoundary[idx] = true;
+              boundary.addLast(new Point2D.Double(current.x, current.y-1));
+            }
+            if (intensity < testPx) nextBoundary.addLast(new Point2D.Double(current.x, current.y-1));
+          }
+          if (current.y < h-1) {
+            int idx = (int)(current.y+1) * w + (int)current.x;
+            testPx = (int)surround[idx];
+            if (intensity >= testPx && MSERtmp[idx] == -1 && !isBoundary[idx]) {
+              isBoundary[idx] = true;
+              boundary.addLast(new Point2D.Double(current.x, current.y+1));
+            }
+            if (intensity < testPx) nextBoundary.addLast(new Point2D.Double(current.x, current.y+1));
+          }
+        }
+      }
+      
+      while(nextBoundary.size() > 0) {
+        boundary.addLast(nextBoundary.removeFirst());
+        
+        
+      }
+      if (!touch) sizes[intensity] = lastSize;
+      else sizes[intensity] = 0;
+    }
+    int delta = 12;
+    int maxStableSize = centerPx/2;
+    double minSizeChange = w*h;
+    for (int i = centerPx+delta; i < 255-delta; i++) {
+      
+      
+      //Do not allow too big regions - boundary effect!!!
+      //Do not allow too small regions - one pixel is not a mser
+      if (sizes[i] >= (w*h)/2 || sizes[i] < 5) {
+        continue;
+       }
+      double sizeChange = (sizes[i+delta] - sizes[i-delta])/(double)sizes[i];
+      if (sizeChange < minSizeChange) {
+        minSizeChange = sizeChange;
+        maxStableSize = i;
+      }
+      
+      
+    }
+    //nothing of value found
+    if (minSizeChange == w*h) {
+     //logger.info("mser problem");
+     /*logger.info("sizes: ");
+     int prevsize = 0;
+     for (int i = 0; i < 255; i++) {
+       if (sizes[i] != prevsize) logger.info(sizes[i] + " at "  + i);
+       prevsize = sizes[i];
+     }*/
+     throw new java.lang.RuntimeException("no mser found");
+    }
+    //logger.info("Mser size: " + maxStableSize);
+    for(int i = 0; i < w*h; i++) {
+      if(MSERtmp[i] <= maxStableSize) MSERtmp[i] = 1;
+      else MSERtmp[i] = 0;
+    }
+    
+    return MSERtmp;
+  
+  }
+  
+  public static Point2D.Double getCOG(int[] mat, int w, int h){
+    double norm = 0;
+    Point2D.Double COG = new Point2D.Double();
+    for (int x1 = 0; x1 < w; x1++) {
+      for (int y1 = 0; y1 < h; y1++) {
+        COG.x += mat[y1*w+x1] * x1;
+        COG.y += mat[y1*w+x1] * y1;
+        norm += mat[y1*w+x1];
+      }
+    }
+    COG.x /= norm;
+    COG.y /= norm;
+    return COG;
+  
+  }
+  
+  public static double[][] getCovMatrix(int[] mat, int w, int h) {
+    double[][] cov = new double[2][2];
+    double norm = 0;
+    Point2D.Double COG = getCOG(mat, w, h);
+    for (int x1 = 0; x1 < w; x1++) {
+      for (int y1 = 0; y1 < h; y1++) {
+        cov[0][0] += (x1-COG.x) * (x1-COG.x)*mat[y1*w+x1];
+        cov[0][1] += (x1-COG.x) * (y1-COG.y)*mat[y1*w+x1];
+        cov[1][0] += (y1-COG.y) * (x1-COG.x)*mat[y1*w+x1];
+        cov[1][1] += (y1-COG.y) * (y1-COG.y)*mat[y1*w+x1];
+        norm+=mat[y1*w+x1];
+        
+      }
+     
+    }
+   
+    cov[0][0] /= norm;
+    cov[0][1] /= norm;
+    cov[1][0] /= norm;
+    cov[1][1] /= norm;
+    
+    
+    return cov;
+  }
+  
+  public static double bilinearInterpolate(double[][] source, double x, double y, int w, int h) {
+    double ret = 0.0;
+    if (x >= w-1 || x < 0 || y >= h-1 || y < 0) return ret;
+    Point2D.Double topLeft = new Point2D.Double(Math.floor(x), Math.floor(y));
+    double left = (source[(int)topLeft.y][(int)topLeft.x] * (1-y+topLeft.y)) 
+                 + source[(int)topLeft.y+1][(int)topLeft.x] * (y-topLeft.y) ;
+    double right = (source[(int)topLeft.y][(int)topLeft.x+1] * (1-y+topLeft.y)) 
+                 + source[(int)topLeft.y+1][(int)topLeft.x+1] * (y-topLeft.y) ;
+    ret = (x - topLeft.x) * right + (1 - x + topLeft.x ) * left;
+    
+    return ret;
+  }
+  
+  public double[][] getNormalizedRegion(int[] region, int[] mser, int w, int h) {
+    double cov[][] = getCovMatrix(mser, w, h);
+    int centerX = w/2;
+    int centerY = h/2;
+            
+    Matrix mCov = new Matrix(cov);
+    Matrix mVectors = mCov.eig().getV();
+    Matrix mValues = mCov.eig().getD();
+    Point2D.Double COG = getCOG(mser, w, h);
+    Matrix mCOG = new Matrix(2, 1);
+    mCOG.set(0, 0, COG.x);
+    mCOG.set(1, 0, COG.y);
+    mValues.set(0, 0, Math.sqrt(mValues.get(0, 0)) );
+    mValues.set(1, 1, Math.sqrt(mValues.get(1, 1)) );
+    Matrix normToRegion = mVectors.times(mValues);
+    //logger.info("nrm: starting calculation");
+    double[][] origMser = new double[h][w];
+      for (int i = 0; i < w*h; i++) {
+        origMser[i/w][i%w] = mser[i]*region[i];
+      }
+            
+      //logger.info("nrm: got origMser");
+      double[][] normalized = new double[h][w];
+      for (int x = 0; x < w; x++) {
+        for (int y = 0; y < h; y++){
+          double[][] pt = new double[2][1];
+          pt[0][0] = (x-centerX); 
+          pt[1][0] = (y-centerY);
+          Matrix X = new Matrix(pt);
+          Matrix origCoords = normToRegion.times(X);
+          origCoords.plusEquals(mCOG);
+          //logger.info("row " + y + " col " + x + " ok?");
+          normalized[y][x] = bilinearInterpolate(origMser, origCoords.get(0, 0)+centerX, origCoords.get(1, 0)+centerY, w, h);
+          //logger.info("row " + y + " col " + x + " ok");
+        }
+        
+      }
+      //logger.info("returning");
+    return normalized;
+  }
+  
+  public static int getMaxChannel(double[][] region, int w, int h, int channelCount, int maxGrad) {
+    
+    int[] channelHist = new int[channelCount];
+    for (int i = 0; i < channelCount; i++) channelHist[i] = 0;
+    for (int x = 1; x < w-1; x++) {
+      for (int y = 1; y < w-1; y++) {
+        double gradX = (region[y][x+1] - region[y][x-1])/maxGrad;
+        double gradY = (region[y+1][x] - region[y-1][x])/maxGrad;
+        double gradSize = Math.sqrt(gradX*gradX + gradY*gradY);
+        //double rotA = Math.asin(gradY/gradSize);
+        double rot = Math.acos(gradX/gradSize);
+        if (gradY < 0) rot = 2*Math.PI - rot;
+        rot /= 2*Math.PI;
+        if (rot == 1) rot = 0; //safeguard to not exceed channelCount, rot by 2*Pi (~rot==1) is equiv to no rot(~rot==0).
+        channelHist[(int)(rot*(double)channelCount)]++;
+      }
+    }
+    int maxChannel = -1;
+    int maxVal = 0;
+    for (int i = 0; i < channelCount; i++) {
+      if (channelHist[i] > maxVal) {
+        maxVal = channelHist[i];
+        maxChannel = i;
+      }
+    }
+    return maxChannel;
+  }
+  
+  public static double[] rotateByChannel(double[][] region, int channel, int channelCount, int w, int h) {
+    double[] rotated = new double[w*h];
+    // this is the angel by which we suspect the region is rotated from the norm position
+    //therefore, we look for the pixel required for the rotated region at a position offset by this rotation in the original region
+    double theta = (double)channel/channelCount * 2*Math.PI;
+    
+    for (int x = 0; x < w; x++) {
+      for (int y = 0; y < h; y++) {
+        double origX = Math.cos(theta)*x - Math.sin(theta)*y;
+        double origY = Math.sin(theta)*x + Math.cos(theta)*y;
+        rotated[y*w+x] = bilinearInterpolate(region, origX, origY, w, h);        
+      }
+    }
+    
+    return rotated;
+  }
+  
+  
+  
   private void getCorrs() {
   correlations = new double[ptsA.size()][ptsB.size()];
     
-    Raster rasterA = CNormalization.normalize((new Crgb2grey()).convert(inputA), 128, 64).getData();
-    Raster rasterB = CNormalization.normalize((new Crgb2grey()).convert(inputB), 128, 64).getData();
-    int corrWindowSize = 5;
-    CCovarianceMetric CV = new CCovarianceMetric(inputA, inputB, 2*corrWindowSize+1, CAreaSimilarityMetric.Shape.RECTANGULAR);
-    CCrossCorrelationMetric CC = new CCrossCorrelationMetric(inputA, inputB, 2*corrWindowSize+1, CAreaSimilarityMetric.Shape.RECTANGULAR);
+    Raster rasterA = (new Crgb2grey()).convert(inputA).getData();
+    
+    Raster rasterB = (new Crgb2grey()).convert(inputB).getData();
+    //int corrWindowSize = 7;
+    int dim = 51;
+    //CCovarianceMetric CV = new CCovarianceMetric(inputA, inputB, dim, CAreaSimilarityMetric.Shape.RECTANGULAR);
+    CCrossCorrelationMetric CC = new CCrossCorrelationMetric(inputA, inputB, dim, CAreaSimilarityMetric.Shape.RECTANGULAR);
+    LinkedList<double[]> APlus = new LinkedList<>();
+    LinkedList<double[]> AMinus = new LinkedList<>();
+    LinkedList<double[]> BPlus = new LinkedList<>();
+    LinkedList<double[]> BMinus = new LinkedList<>();
+    LinkedList<Integer> APlusIdx = new LinkedList<>();
+    LinkedList<Integer> AMinusIdx = new LinkedList<>();
+    LinkedList<Integer> BPlusIdx = new LinkedList<>();
+    LinkedList<Integer> BMinusIdx = new LinkedList<>();
     for (int i = 0; i < ptsA.size() ; i++) {
-      setProgress(100 * i / ptsA.size());
+      
+      setProgress(50 * i / ptsA.size());
+      
+      
       Point2D.Double a = ptsA.getPoint(i);
       int AX = (int)a.x;
       int AY = (int)a.y;
       boolean AisEdge = false;
-      if ((AX < (2*corrWindowSize+1)) || (AX >= rasterA.getWidth()-(2*corrWindowSize+1)) || (AY < (2*corrWindowSize+1)) || (AY >= rasterA.getHeight()-(2*corrWindowSize+1))) {
+      if ((AX < (dim)) || (AX >= rasterA.getWidth()-(dim)) || (AY < (dim)) || (AY >= rasterA.getHeight()-(dim))) {
         AisEdge = true;
       }
       else {
-        double currentA[] = null;
-        double currentB[] = null;
-        currentA = rasterA.getSamples(AX, AY, 2*corrWindowSize+1, 2*corrWindowSize+1, 0, currentA);
-        if (ptsB.size() ==  0) break;
-        for (int j = 0; j < ptsB.size() ; j++) {
-          boolean BisEdge = false;
-          Point2D.Double b = ptsB.getPoint(j);
-          int BX = (int)b.x;
-          int BY = (int)b.y;
-          if ((BX < (2*corrWindowSize+1)) || (BX >= rasterA.getWidth()-(2*corrWindowSize+1)) || (BY < (2*corrWindowSize+1)) || (BY >= rasterA.getHeight()-(2*corrWindowSize+1))) {
-            BisEdge = true;
+        int currentA[] = null;
+        currentA = rasterA.getSamples(AX-dim, AY-dim, dim, dim, 0, currentA);
+        //int dim = dim;
+        
+        boolean gotAPlus = false;
+        boolean gotAMinus = false;
+        int[] mserAPlus = null;
+        int[] mserAMinus = null;
+        double[] rotatedAPlus = null;
+        double[] rotatedAMinus = null;
+        
+        try {
+          //logger.info("starting APlus");
+          mserAPlus = getMserPlus(currentA, dim, dim);
+          //logger.info("gotMserAplus");
+          double[][] normalizedAPlus = getNormalizedRegion(currentA, mserAPlus, dim, dim);
+          //logger.info("gotNormAplus");
+          int APlusMaxChannel = getMaxChannel(normalizedAPlus, dim, dim, channelCount, 255);
+          rotatedAPlus = rotateByChannel(normalizedAPlus, APlusMaxChannel, channelCount, dim, dim);
+          gotAPlus = true;
+          
+        }
+        catch(java.lang.RuntimeException e) {
+          //logger.info("apt: " + i + ": plus: " + e.toString());
+        }
+        try {
+          //logger.info("starting AMinus");
+          mserAMinus = getMserMinus(currentA, dim, dim);
+          //logger.info("gotMserAMinus");
+          double[][] normalizedAMinus = getNormalizedRegion(currentA, mserAMinus, dim, dim);
+          //logger.info("gotNormAMinus");
+          int AMinusMaxChannel = getMaxChannel(normalizedAMinus, dim, dim, channelCount, 255);
+          rotatedAMinus = rotateByChannel(normalizedAMinus, AMinusMaxChannel, channelCount, dim, dim);
+          gotAMinus = true;
+          //logger.info("gotAMinus");
+        }
+        catch(java.lang.RuntimeException e) {
+          //logger.info("apt: " + i + ": minus" + e.toString());
+        }
+        
+        if (!gotAMinus && !gotAPlus) {
+          logger.info("apt " + i + " has no mser of value");
+          
+        }
+        int[] green = new int[3];
+        green[0] = 0;
+        green[1] = 255;
+        green[2] = 0;
+        if (gotAPlus) {
+          APlus.add(rotatedAPlus);
+          APlusIdx.add(i);
+          for (int x = 0; x < dim; x++) {
+            for (int y = 0; y < dim; y++) {
+              if (mserAPlus[x*dim+y] == 1) {
+                inputA.getRaster().setPixel((int)ptsA.getPoint(i).x+x-dim/2, (int)ptsA.getPoint(i).y+y-dim/2, green);
+              }
+            }
           }
           
-          if (AisEdge || BisEdge) {
-        
-            correlations[i][j] = 0.0;
-          }
-          else {
-            
-            currentB = rasterB.getSamples(BX-corrWindowSize, BY-corrWindowSize, 2*corrWindowSize+1, 2*corrWindowSize+1, 0, currentB);
-            /*double ssd = 0;
-            
-            for (int k = 0; k < Math.pow(2*corrWindowSize+1, 2); k++) {
-              ssd += (double)Math.pow(currentA[k] - currentB[k], 2)/65536;       
+          
+        }
+        int[] red = new int[3];
+        red[0] = 255;
+        red[1] = 0;
+        red[2] = 0;
+        if (gotAMinus) {
+          AMinus.add(rotatedAMinus);
+          AMinusIdx.add(i);
+          for (int x = 0; x < dim; x++) {
+            for (int y = 0; y < dim; y++) {
+              if (mserAMinus[x*dim+y] == 1) {
+                inputA.getRaster().setPixel((int)ptsA.getPoint(i).x+x-dim/2, (int)ptsA.getPoint(i).y+y-dim/2, red);
+              }
             }
-            ssd /= Math.pow(2*corrWindowSize+1, 2);*/
-            double cc = CC.getDistance(a, b);
-            //double cv = CV.getDistance(a, b);
-            correlations[i][j] = cc;
           }
         }
+        
+        
       }
     }
+    if (ptsB.size() ==  0) return;
+    for (int i = 0; i < ptsB.size() ; i++) {
+      setProgress(50 * i / ptsB.size() + 50);
+      boolean BisEdge = false;
+      Point2D.Double b = ptsB.getPoint(i);
+      int BX = (int)b.x;
+      int BY = (int)b.y;
+      if ((BX < (dim)) || (BX >= rasterA.getWidth()-(dim)) || (BY < (dim)) || (BY >= rasterA.getHeight()-(dim))) {
+        BisEdge = true;
+      }
+
+      if (!BisEdge) {
+        int[] currentB = null;
+        currentB = rasterB.getSamples(BX-dim/2, BY-dim/2, dim, dim, 0, currentB);
+        
+        boolean gotBPlus = false;
+        boolean gotBMinus = false;
+        int[] mserBPlus = null;
+        int[] mserBMinus = null;
+        double[] rotatedBPlus = null;
+        double[] rotatedBMinus = null;
+
+        try {
+          mserBPlus = getMserPlus(currentB, dim, dim);
+          double[][] normalizedBPlus = getNormalizedRegion(currentB, mserBPlus, dim, dim);
+          int BPlusMaxChannel = getMaxChannel(normalizedBPlus, dim, dim, channelCount, 255);
+          rotatedBPlus = rotateByChannel(normalizedBPlus, BPlusMaxChannel, channelCount, dim, dim);
+          gotBPlus = true;
+        }
+        catch(java.lang.RuntimeException e) {
+          //logger.info("bpt: " + i + ": plus: " + e.toString());
+        }
+        try {
+          mserBMinus = getMserMinus(currentB, dim, dim);
+          double[][] normalizedBMinus = getNormalizedRegion(currentB, mserBMinus, dim, dim);
+          int BMinusMaxChannel = getMaxChannel(normalizedBMinus, dim, dim, channelCount, 255);
+          rotatedBMinus = rotateByChannel(normalizedBMinus, BMinusMaxChannel, channelCount, dim, dim);
+          gotBMinus = true;
+        }
+        catch(java.lang.RuntimeException e) {
+          //logger.info("bpt: " + i + ": minus " + e.toString());
+        }
+
+        if (!gotBMinus && !gotBPlus) {
+          logger.info("bpt " + i + " has no mser of value");
+        }
+        if (gotBPlus) {
+          BPlus.add(rotatedBPlus);
+          BPlusIdx.add(i);
+        }
+        if (gotBMinus) {
+          BMinus.add(rotatedBMinus);
+          BMinusIdx.add(i);
+        }
+
+       }
+     }
+    
+    for(int i = 0; i < ptsA.size(); i++ ) {
+      for(int j = 0; j < ptsB.size(); j++ ) {
+        correlations[i][j] = 0.0;
+      }
+    }
+    logger.info("corr sizes:");
+    logger.info("APlus: " + APlus.size() + " AMinus: " + AMinus.size());
+    logger.info("BPlus: " + BPlus.size() + " BMinus: " + BMinus.size());
+    
+    CSThresh = (Math.min(APlus.size(), BPlus.size()) + Math.min(AMinus.size(), BMinus.size())) / 2 ;
+    
+    while (APlusIdx.size() > 0) {
+      int i = APlusIdx.removeFirst();
+      double[] inputI = APlus.removeFirst();
+      for (int y = 0; y < BPlus.size(); y++) {
+        int j = BPlusIdx.get(y);
+        double[] inputJ = BPlus.get(y);
+        correlations[i][j] = CC.getValue(inputI, inputJ);
+      }
+      
+      
+    }
+    while (AMinusIdx.size() > 0) {
+      int i = AMinusIdx.removeFirst();
+      double[] inputI = AMinus.removeFirst();
+      for (int y = 0; y < BMinus.size(); y++) {
+        int j = BMinusIdx.get(y);
+        double[] inputJ = BMinus.get(y);
+        if (CC.getValue(inputI, inputJ) > correlations[i][j])  correlations[i][j] = CC.getValue(inputI, inputJ) ;
+        
+        
+      }
+    }
+    
     logger.info("correlations filled in");
   };
   
@@ -314,7 +859,7 @@ public class CRansacRegister extends CAnalysisWorker{
           double dist = Math.sqrt(   (sensedPt.x-transformedRefPt.x)*(sensedPt.x-transformedRefPt.x)
                                     + (sensedPt.y-transformedRefPt.y)*(sensedPt.y-transformedRefPt.y));
           if (dist < inlierThresh) {
-            inlierCount += (ptsA.getQuality(i) + ptsB.getQuality(j))/2;
+            inlierCount += correlations[i][j];
             sensedUsed[j] = true;
             inliersRef.add(refPt);
             inliersSensed.add(sensedPt);
@@ -361,9 +906,9 @@ public class CRansacRegister extends CAnalysisWorker{
         }
       }
       while ((maxCorr < corrThresh) && (tries < maxTries));
-        logger.info("m: " + maxCorr);
+        //logger.info("m: " + maxCorr);
       if (maxCorr >= corrThresh) {
-        logger.info("not mtfail");
+        //logger.info("not mtfail");
         
       }
       
@@ -465,15 +1010,27 @@ public class CRansacRegister extends CAnalysisWorker{
         break;
       }*/
       double corrThresh = 1-((double)iter/iters) ;
-      getRandomParams(corrThresh);
-     trans.set(refInit, sensedInit);
-             
+     getRandomParams(corrThresh);
+     boolean succesful = false;
+     while(!succesful){
+      try{
+        trans.set(refInit, sensedInit);
+        succesful = true;
+      }
+      catch(java.lang.RuntimeException e) {
+        System.out.println(e.toString());
+        getRandomParams(corrThresh);
+      }
+     }        
      logger.info("iter " + iter + ": inliers found: " + inlierCount + " corrT: " + corrThresh);
       //logger.info("iter " + iter + ": "); 
       //trans.print();
     }
     getInliers(maxTrans);
+    
      trans.set(inliersRef, inliersSensed);
+    
+    
       trans.print();
     
     

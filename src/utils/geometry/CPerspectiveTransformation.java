@@ -68,6 +68,7 @@ public class CPerspectiveTransformation implements ITransformation2D {
             b[2*i] = ptsSensed[i].x;
             b[2*i+1] = ptsSensed[i].y;
           }
+          
           Matrix A = new Matrix(matrix);
           Matrix B = new Matrix(b, 1);
           Matrix AT = A.transpose();
