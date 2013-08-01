@@ -54,10 +54,12 @@ public class CRansacRegister extends CAnalysisWorker{
   LinkedList<Point2D.Double> inliersRefMSS = new LinkedList<>();
   LinkedList<Point2D.Double> inliersSensedMSS = new LinkedList<>();
   CPerspectiveTransformation maxTrans = new CPerspectiveTransformation();
-    int channelCount = 8; 
+    int channelCount = 32; 
     int iters;
     int inlierThresh;
     int CSThresh;
+    static int MSERdelta = 11;
+    
     
         
   
@@ -90,8 +92,6 @@ public class CRansacRegister extends CAnalysisWorker{
     inlierThresh = (inputA.getHeight()+inputB.getWidth())/40;
     CSThresh = ptsA.size() < ptsB.size() ? ptsA.size()/2 : ptsB.size()/2;
     
-    
-    
   }
   
     
@@ -99,6 +99,7 @@ public class CRansacRegister extends CAnalysisWorker{
   public static int[] getMserPlus(int[] surround, int w, int h) {
     
     int[] MSERtmp = new int[w*h];
+    
     boolean[] isBoundary = new boolean[w*h];
     LinkedList<Point2D.Double> boundary = new LinkedList<>();
     LinkedList<Point2D.Double> nextBoundary = new LinkedList<>();
@@ -108,21 +109,16 @@ public class CRansacRegister extends CAnalysisWorker{
     boundary.addLast(new Point2D.Double((int)(w/2), (int)(h/2)));
     int centerPx = (int)surround[((h/2) * w) + (w/2)];
     MSERtmp[(h/2)*w  + (w/2)] = centerPx;
-    
     int[] sizes = new int[centerPx+1];
     int testPx = 0;
-    
     sizes[0] = 1;
     int lastSize = 1;
     boolean touch = false;
     for (int intensity = centerPx; intensity >= 0; intensity--) {
      int i =0;
-     
      while(boundary.size() > 0) {
         i++;
-        
         Point2D.Double current = boundary.removeFirst();
-        
         int currentPx = (int)surround[(int)current.y * w + (int)current.x];   
         int curindex = (int)current.y * w + (int)current.x;
         isBoundary[curindex] = false;
@@ -137,7 +133,6 @@ public class CRansacRegister extends CAnalysisWorker{
             lastSize++;
          }
           MSERtmp[(int)current.y * w + (int)current.x] = intensity;
-          
           if (current.x > 0) {
             int idx = (int)current.y * w + (int)current.x-1;
             testPx = (int)surround[idx];
@@ -183,17 +178,15 @@ public class CRansacRegister extends CAnalysisWorker{
       if (!touch) sizes[intensity] = lastSize;
       else sizes[intensity] = 0;
     }
-    int delta = 12;
+    
     int maxStableSize = centerPx/2;
     double minSizeChange = w*h;
-    for (int i = delta; i < centerPx-delta; i++) {
-      
-      //Do not allow too big regions - boundary effect!!!
+    for (int i = MSERdelta; i < centerPx-MSERdelta; i++) {
       //Do not allow too small regions - one pixel is not an mser
-      if (sizes[i] >= (w*h)/2 || sizes[i] < 5) {
+      if (sizes[i] < 9) {
         continue;
        }
-      double sizeChange = (sizes[i-delta] - sizes[i+delta])/(double)sizes[i];
+      double sizeChange = Math.abs(sizes[i-MSERdelta] - sizes[i+MSERdelta])/(double)sizes[i];
       if (sizeChange < minSizeChange) {
         minSizeChange = sizeChange;
         maxStableSize = i;
@@ -201,10 +194,9 @@ public class CRansacRegister extends CAnalysisWorker{
       
     }
     if (minSizeChange == w*h) {
-
-     throw new java.lang.RuntimeException("no mser found");
+      throw new java.lang.RuntimeException("no mser found");
     }
-    //logger.info("Mser size: " + maxStableSize);
+    
     for(int i = 0; i < w*h; i++) {
       if(MSERtmp[i] >= maxStableSize) MSERtmp[i] = 1;
       else MSERtmp[i] = 0;
@@ -301,18 +293,14 @@ public class CRansacRegister extends CAnalysisWorker{
       if (!touch) sizes[intensity] = lastSize;
       else sizes[intensity] = 0;
     }
-    int delta = 12;
     int maxStableSize = centerPx/2;
     double minSizeChange = w*h;
-    for (int i = centerPx+delta; i < 255-delta; i++) {
-      
-      
-      //Do not allow too big regions - boundary effect!!!
+    for (int i = centerPx+MSERdelta; i < 255-MSERdelta; i++) {
       //Do not allow too small regions - one pixel is not a mser
-      if (sizes[i] >= (w*h)/2 || sizes[i] < 5) {
+      if (sizes[i] < 9) {
         continue;
-       }
-      double sizeChange = (sizes[i+delta] - sizes[i-delta])/(double)sizes[i];
+      }
+      double sizeChange = Math.abs(sizes[i+MSERdelta] - sizes[i-MSERdelta])/(double)sizes[i];
       if (sizeChange < minSizeChange) {
         minSizeChange = sizeChange;
         maxStableSize = i;
@@ -360,6 +348,8 @@ public class CRansacRegister extends CAnalysisWorker{
   public static double[][] getCovMatrix(int[] mat, int w, int h) {
     double[][] cov = new double[2][2];
     double norm = 0;
+    int sizeW =w/2;
+    int sizeH =h/2;
     Point2D.Double COG = getCOG(mat, w, h);
     for (int x1 = 0; x1 < w; x1++) {
       for (int y1 = 0; y1 < h; y1++) {
@@ -372,11 +362,15 @@ public class CRansacRegister extends CAnalysisWorker{
       }
      
     }
-   
-    cov[0][0] /= norm;
-    cov[0][1] /= norm;
-    cov[1][0] /= norm;
-    cov[1][1] /= norm;
+    double normX = (1.0/3.0)*(sizeW)*(sizeW + 1.0)*(2*sizeW+1.0) * h;
+    double normY = (1.0/3.0)*(sizeH)*(sizeH + 1.0)*(2*sizeH+1.0) * w;
+    
+    
+    double normXY = (w/2)*(w/2+1) * (h/2)*(h/2+1);
+    cov[0][0] /= normX;
+    cov[0][1] /= normXY;
+    cov[1][0] /= normXY;
+    cov[1][1] /= normY;
     
     
     return cov;
@@ -395,7 +389,7 @@ public class CRansacRegister extends CAnalysisWorker{
     return ret;
   }
   
-  public double[][] getNormalizedRegion(int[] region, int[] mser, int w, int h) {
+  public static double[][] getNormalizedRegion(int[] region, int[] mser, int w, int h) {
     double cov[][] = getCovMatrix(mser, w, h);
     int centerX = w/2;
     int centerY = h/2;
@@ -427,7 +421,7 @@ public class CRansacRegister extends CAnalysisWorker{
           Matrix origCoords = normToRegion.times(X);
           origCoords.plusEquals(mCOG);
           //logger.info("row " + y + " col " + x + " ok?");
-          normalized[y][x] = bilinearInterpolate(origMser, origCoords.get(0, 0)+centerX, origCoords.get(1, 0)+centerY, w, h);
+          normalized[y][x] = bilinearInterpolate(origMser, origCoords.get(0, 0), origCoords.get(1, 0), w, h);
           //logger.info("row " + y + " col " + x + " ok");
         }
         
@@ -436,45 +430,55 @@ public class CRansacRegister extends CAnalysisWorker{
     return normalized;
   }
   
-  public static int getMaxChannel(double[][] region, int w, int h, int channelCount, int maxGrad) {
+  public static int getMaxChannel(double[][] region, int[] mser, int w, int h, int channelCount, int maxGrad) {
     
     int[] channelHist = new int[channelCount];
     for (int i = 0; i < channelCount; i++) channelHist[i] = 0;
     for (int x = 1; x < w-1; x++) {
-      for (int y = 1; y < w-1; y++) {
+      for (int y = 1; y < h-1; y++) {
+        if (mser[y*h+x+1] == 0 || mser[y*h+x-1] == 0 || mser[(y+1)*h+x] == 0 || mser[(y-1)*h+x] == 0) continue;
         double gradX = (region[y][x+1] - region[y][x-1])/maxGrad;
         double gradY = (region[y+1][x] - region[y-1][x])/maxGrad;
         double gradSize = Math.sqrt(gradX*gradX + gradY*gradY);
+        if (gradSize == 0) continue;
         //double rotA = Math.asin(gradY/gradSize);
         double rot = Math.acos(gradX/gradSize);
-        if (gradY < 0) rot = 2*Math.PI - rot;
-        rot /= 2*Math.PI;
+        //if (gradY < 0) rot = 2*Math.PI - rot;
+        rot /= Math.PI;
         if (rot == 1) rot = 0; //safeguard to not exceed channelCount, rot by 2*Pi (~rot==1) is equiv to no rot(~rot==0).
         channelHist[(int)(rot*(double)channelCount)]++;
       }
     }
     int maxChannel = -1;
     int maxVal = 0;
+    int cum = 0;
     for (int i = 0; i < channelCount; i++) {
+       //System.out.print(i+":"+channelHist[i] + ".");
+       cum+=channelHist[i];
       if (channelHist[i] > maxVal) {
+       
         maxVal = channelHist[i];
         maxChannel = i;
       }
     }
+       //System.out.println(cum);
     return maxChannel;
   }
   
   public static double[] rotateByChannel(double[][] region, int channel, int channelCount, int w, int h) {
     double[] rotated = new double[w*h];
-    // this is the angel by which we suspect the region is rotated from the norm position
+    // this is the angle by which we suspect the region is rotated from the norm position
     //therefore, we look for the pixel required for the rotated region at a position offset by this rotation in the original region
-    double theta = (double)channel/channelCount * 2*Math.PI;
-    
+    double theta = -1*(double)channel/channelCount * Math.PI;
+    //System.out.println("rot by " + theta);
+    int centerX = w/2;
+    int centerY = h/2;
     for (int x = 0; x < w; x++) {
       for (int y = 0; y < h; y++) {
-        double origX = Math.cos(theta)*x - Math.sin(theta)*y;
-        double origY = Math.sin(theta)*x + Math.cos(theta)*y;
-        rotated[y*w+x] = bilinearInterpolate(region, origX, origY, w, h);        
+        
+        double origX = Math.cos(theta)*(x-centerX) - Math.sin(theta)*(y-centerY);
+        double origY = Math.sin(theta)*(x-centerX) + Math.cos(theta)*(y-centerY);
+        rotated[y*w+x] = bilinearInterpolate(region, origX+centerX, origY+centerY, w, h);        
       }
     }
     
@@ -491,7 +495,7 @@ public class CRansacRegister extends CAnalysisWorker{
     Raster rasterB = (new Crgb2grey()).convert(inputB).getData();
     //int corrWindowSize = 7;
     int dim = 51;
-    //CCovarianceMetric CV = new CCovarianceMetric(inputA, inputB, dim, CAreaSimilarityMetric.Shape.RECTANGULAR);
+    CCovarianceMetric CV = new CCovarianceMetric(inputA, inputB, dim, CAreaSimilarityMetric.Shape.RECTANGULAR);
     CCrossCorrelationMetric CC = new CCrossCorrelationMetric(inputA, inputB, dim, CAreaSimilarityMetric.Shape.RECTANGULAR);
     LinkedList<double[]> APlus = new LinkedList<>();
     LinkedList<double[]> AMinus = new LinkedList<>();
@@ -502,22 +506,17 @@ public class CRansacRegister extends CAnalysisWorker{
     LinkedList<Integer> BPlusIdx = new LinkedList<>();
     LinkedList<Integer> BMinusIdx = new LinkedList<>();
     for (int i = 0; i < ptsA.size() ; i++) {
-      
       setProgress(50 * i / ptsA.size());
-      
-      
       Point2D.Double a = ptsA.getPoint(i);
       int AX = (int)a.x;
       int AY = (int)a.y;
       boolean AisEdge = false;
-      if ((AX < (dim)) || (AX >= rasterA.getWidth()-(dim)) || (AY < (dim)) || (AY >= rasterA.getHeight()-(dim))) {
+      if ((AX < (dim/2)) || (AX >= rasterA.getWidth()-(dim/2)) || (AY < (dim/2)) || (AY >= rasterA.getHeight()-(dim/2))) {
         AisEdge = true;
       }
       else {
         int currentA[] = null;
-        currentA = rasterA.getSamples(AX-dim, AY-dim, dim, dim, 0, currentA);
-        //int dim = dim;
-        
+        currentA = rasterA.getSamples(AX-dim/2, AY-dim/2, dim, dim, 0, currentA);
         boolean gotAPlus = false;
         boolean gotAMinus = false;
         int[] mserAPlus = null;
@@ -526,54 +525,50 @@ public class CRansacRegister extends CAnalysisWorker{
         double[] rotatedAMinus = null;
         
         try {
-          //logger.info("starting APlus");
           mserAPlus = getMserPlus(currentA, dim, dim);
-          //logger.info("gotMserAplus");
           double[][] normalizedAPlus = getNormalizedRegion(currentA, mserAPlus, dim, dim);
-          //logger.info("gotNormAplus");
-          int APlusMaxChannel = getMaxChannel(normalizedAPlus, dim, dim, channelCount, 255);
+          int APlusMaxChannel = getMaxChannel(normalizedAPlus, mserAPlus, dim, dim, channelCount, 255);
           rotatedAPlus = rotateByChannel(normalizedAPlus, APlusMaxChannel, channelCount, dim, dim);
           gotAPlus = true;
-          
         }
         catch(java.lang.RuntimeException e) {
           //logger.info("apt: " + i + ": plus: " + e.toString());
         }
         try {
-          //logger.info("starting AMinus");
           mserAMinus = getMserMinus(currentA, dim, dim);
-          //logger.info("gotMserAMinus");
           double[][] normalizedAMinus = getNormalizedRegion(currentA, mserAMinus, dim, dim);
-          //logger.info("gotNormAMinus");
-          int AMinusMaxChannel = getMaxChannel(normalizedAMinus, dim, dim, channelCount, 255);
+          int AMinusMaxChannel = getMaxChannel(normalizedAMinus, mserAMinus, dim, dim, channelCount, 255);
           rotatedAMinus = rotateByChannel(normalizedAMinus, AMinusMaxChannel, channelCount, dim, dim);
           gotAMinus = true;
-          //logger.info("gotAMinus");
         }
         catch(java.lang.RuntimeException e) {
           //logger.info("apt: " + i + ": minus" + e.toString());
         }
-        
         if (!gotAMinus && !gotAPlus) {
           logger.info("apt " + i + " has no mser of value");
-          
         }
         int[] green = new int[3];
         green[0] = 0;
         green[1] = 255;
         green[2] = 0;
+        int[] black = new int[3];
+        black[0] = 0;
+        black[1] = 0;
+        black[2] = 0;
+        
         if (gotAPlus) {
           APlus.add(rotatedAPlus);
           APlusIdx.add(i);
           for (int x = 0; x < dim; x++) {
             for (int y = 0; y < dim; y++) {
-              if (mserAPlus[x*dim+y] == 1) {
+              if (mserAPlus[y*dim+x] == 1) {
                 inputA.getRaster().setPixel((int)ptsA.getPoint(i).x+x-dim/2, (int)ptsA.getPoint(i).y+y-dim/2, green);
+              }
+              if (x == 0 || x == dim-1 || y == 0 || y == dim-1) {
+                inputA.getRaster().setPixel((int)ptsA.getPoint(i).x+x-dim/2, (int)ptsA.getPoint(i).y+y-dim/2, black);
               }
             }
           }
-          
-          
         }
         int[] red = new int[3];
         red[0] = 255;
@@ -584,14 +579,16 @@ public class CRansacRegister extends CAnalysisWorker{
           AMinusIdx.add(i);
           for (int x = 0; x < dim; x++) {
             for (int y = 0; y < dim; y++) {
-              if (mserAMinus[x*dim+y] == 1) {
+              if (mserAMinus[y*dim+x] == 1) {
                 inputA.getRaster().setPixel((int)ptsA.getPoint(i).x+x-dim/2, (int)ptsA.getPoint(i).y+y-dim/2, red);
+              }
+              if (x == 0 || x == dim-1 || y == 0 || y == dim-1) {
+                inputA.getRaster().setPixel((int)ptsA.getPoint(i).x+x-dim/2, (int)ptsA.getPoint(i).y+y-dim/2, black);
               }
             }
           }
+          
         }
-        
-        
       }
     }
     if (ptsB.size() ==  0) return;
@@ -601,14 +598,13 @@ public class CRansacRegister extends CAnalysisWorker{
       Point2D.Double b = ptsB.getPoint(i);
       int BX = (int)b.x;
       int BY = (int)b.y;
-      if ((BX < (dim)) || (BX >= rasterA.getWidth()-(dim)) || (BY < (dim)) || (BY >= rasterA.getHeight()-(dim))) {
+      if ((BX < (dim/2)) || (BX >= rasterA.getWidth()-(dim/2)) || (BY < (dim/2)) || (BY >= rasterA.getHeight()-(dim/2))) {
         BisEdge = true;
       }
 
       if (!BisEdge) {
         int[] currentB = null;
         currentB = rasterB.getSamples(BX-dim/2, BY-dim/2, dim, dim, 0, currentB);
-        
         boolean gotBPlus = false;
         boolean gotBMinus = false;
         int[] mserBPlus = null;
@@ -619,7 +615,7 @@ public class CRansacRegister extends CAnalysisWorker{
         try {
           mserBPlus = getMserPlus(currentB, dim, dim);
           double[][] normalizedBPlus = getNormalizedRegion(currentB, mserBPlus, dim, dim);
-          int BPlusMaxChannel = getMaxChannel(normalizedBPlus, dim, dim, channelCount, 255);
+          int BPlusMaxChannel = getMaxChannel(normalizedBPlus, mserBPlus, dim, dim, channelCount, 255);
           rotatedBPlus = rotateByChannel(normalizedBPlus, BPlusMaxChannel, channelCount, dim, dim);
           gotBPlus = true;
         }
@@ -629,7 +625,7 @@ public class CRansacRegister extends CAnalysisWorker{
         try {
           mserBMinus = getMserMinus(currentB, dim, dim);
           double[][] normalizedBMinus = getNormalizedRegion(currentB, mserBMinus, dim, dim);
-          int BMinusMaxChannel = getMaxChannel(normalizedBMinus, dim, dim, channelCount, 255);
+          int BMinusMaxChannel = getMaxChannel(normalizedBMinus, mserBMinus, dim, dim, channelCount, 255);
           rotatedBMinus = rotateByChannel(normalizedBMinus, BMinusMaxChannel, channelCount, dim, dim);
           gotBMinus = true;
         }
@@ -640,15 +636,52 @@ public class CRansacRegister extends CAnalysisWorker{
         if (!gotBMinus && !gotBPlus) {
           logger.info("bpt " + i + " has no mser of value");
         }
+        int[] green = new int[3];
+        green[0] = 0;
+        green[1] = 255;
+        green[2] = 0;
+        int[] black = new int[3];
+        black[0] = 0;
+        black[1] = 0;
+        black[2] = 0;
+        
         if (gotBPlus) {
           BPlus.add(rotatedBPlus);
           BPlusIdx.add(i);
+          for (int x = 0; x < dim; x++) {
+            for (int y = 0; y < dim; y++) {
+              if (mserBPlus[y*dim+x] == 1) {
+                inputB.getRaster().setPixel((int)ptsB.getPoint(i).x+x-dim/2, (int)ptsB.getPoint(i).y+y-dim/2, green);
+              }
+              if (x == 0 || x == dim-1 || y == 0 || y == dim-1) {
+                inputB.getRaster().setPixel((int)ptsB.getPoint(i).x+x-dim/2, (int)ptsB.getPoint(i).y+y-dim/2, black);
+              }
+            }
+          }
+          
+          
         }
+        int[] red = new int[3];
+        red[0] = 255;
+        red[1] = 0;
+        red[2] = 0;
+        
         if (gotBMinus) {
           BMinus.add(rotatedBMinus);
           BMinusIdx.add(i);
+          for (int x = 0; x < dim; x++) {
+            for (int y = 0; y < dim; y++) {
+              if (mserBMinus[y*dim+x] == 1) {
+                inputB.getRaster().setPixel((int)ptsB.getPoint(i).x+x-dim/2, (int)ptsB.getPoint(i).y+y-dim/2, red);
+              }
+              if (x == 0 || x == dim-1 || y == 0 || y == dim-1) {
+                inputB.getRaster().setPixel((int)ptsB.getPoint(i).x+x-dim/2, (int)ptsB.getPoint(i).y+y-dim/2, black);
+              }
+              
+            }
+          }
+          
         }
-
        }
      }
     
@@ -662,6 +695,8 @@ public class CRansacRegister extends CAnalysisWorker{
     logger.info("BPlus: " + BPlus.size() + " BMinus: " + BMinus.size());
     
     CSThresh = (Math.min(APlus.size(), BPlus.size()) + Math.min(AMinus.size(), BMinus.size())) / 2 ;
+    logger.info("CSThresh: " + CSThresh);
+    double maxCorrVal = 0.0;
     
     while (APlusIdx.size() > 0) {
       int i = APlusIdx.removeFirst();
@@ -671,8 +706,6 @@ public class CRansacRegister extends CAnalysisWorker{
         double[] inputJ = BPlus.get(y);
         correlations[i][j] = CC.getValue(inputI, inputJ);
       }
-      
-      
     }
     while (AMinusIdx.size() > 0) {
       int i = AMinusIdx.removeFirst();
@@ -681,16 +714,17 @@ public class CRansacRegister extends CAnalysisWorker{
         int j = BMinusIdx.get(y);
         double[] inputJ = BMinus.get(y);
         if (CC.getValue(inputI, inputJ) > correlations[i][j])  correlations[i][j] = CC.getValue(inputI, inputJ) ;
+        if (correlations[i][j] > maxCorrVal) maxCorrVal = correlations[i][j];
         
         
       }
     }
-    
-    logger.info("correlations filled in");
+    logger.info("max corr val: " + maxCorrVal+"");
+    //logger.info("correlations filled in");
   };
   
   private boolean getTopParams() {
-    logger.info("getting top params");
+    //logger.info("getting top params");
     LinkedList<Point2D.Double> inliersRefTop = new LinkedList<Point2D.Double>();
     LinkedList<Point2D.Double> inliersSensedTop = new LinkedList<Point2D.Double>();            
     for (int p = 0; p < 4; p++) {
@@ -729,8 +763,8 @@ public class CRansacRegister extends CAnalysisWorker{
        //topTrans = new CPerspectiveTransformation();
         
       }
-    logger.info("top ref positions: " + refTop[0].toString() + refTop[1].toString() + refTop[2].toString() + refTop[3].toString()) ;
-      logger.info("top sensed positions: " + sensedTop[0].toString() + sensedTop[1].toString() + sensedTop[2].toString() + sensedTop[3].toString()) ;
+    //logger.info("top ref positions: " + refTop[0].toString() + refTop[1].toString() + refTop[2].toString() + refTop[3].toString()) ;
+      //logger.info("top sensed positions: " + sensedTop[0].toString() + sensedTop[1].toString() + sensedTop[2].toString() + sensedTop[3].toString()) ;
     
       try {
         topTrans.set(inliersRefTop, inliersSensedTop);
@@ -858,7 +892,7 @@ public class CRansacRegister extends CAnalysisWorker{
           Point2D.Double transformedRefPt = trans.getProjected(refPt);
           double dist = Math.sqrt(   (sensedPt.x-transformedRefPt.x)*(sensedPt.x-transformedRefPt.x)
                                     + (sensedPt.y-transformedRefPt.y)*(sensedPt.y-transformedRefPt.y));
-          if (dist < inlierThresh) {
+          if (dist < inlierThresh && correlations[i][j] > 0.0) {
             inlierCount += correlations[i][j];
             sensedUsed[j] = true;
             inliersRef.add(refPt);
@@ -937,6 +971,9 @@ public class CRansacRegister extends CAnalysisWorker{
     
     
     CPerspectiveTransformation trans = new CPerspectiveTransformation();
+    
+     
+    
     trans.set(refInit, sensedInit);
     trans.print();
     
@@ -947,69 +984,43 @@ public class CRansacRegister extends CAnalysisWorker{
     if (!(enoughPts)) topTrans.copy(trans);
     topTrans.print();
     
-    double inlierCountTop = getInliers(topTrans);
     
+    double inlierCountTop = getInliers(topTrans);
+    logger.info(inlierCountTop+"");
     if (inlierCountTop > inlierCountInit) {
       trans.copy(topTrans);
       logger.info("replacing universal transformation with top transformation");
       
     }
     
-    
-    
     Point size = new Point(inputA.getWidth(), inputA.getHeight());
     
     BufferedImage output = new BufferedImage(size.x, size.y, inputB.getType());
     WritableRaster outRaster = output.getRaster();
     Raster in = inputB.getData();
-    /*WritableRaster sensedRaster = inputB.getRaster();
-    WritableRaster refRaster = inputA.getRaster();
     
-    int[] red = new int[3];
-    red[0] = 255;
-    red[1] = 0;
-    red[2] = 0;
-    for (int i = 0; i < 4; i++) {
-      red[0] = ((i%2)+1)*80;
-      red[1] = ((i%2)+2)*80;
-      
-      refRaster.setPixel((int)refInit[i].x, (int)refInit[i].y, red);
-      sensedRaster.setPixel((int)sensedInit[i].x, (int)sensedInit[i].y, red);
-      outRaster.setPixel((int)sensedInit[i].x, (int)sensedInit[i].y, red);
-      outRaster.setPixel((int)refInit[i].x, (int)refInit[i].y, red);
-    }*/
-    
-
-
     maxTrans.copy(trans);
     double maxInliers = 0.0;
     logger.info("total pts: refPts: " + ptsA.size() + " sensedPts: " + ptsB.size() + " total: " + ptsA.size()*ptsB.size() );
-    
+    CPerspectiveTransformation firstTrans = new CPerspectiveTransformation();
+    //CSThresh = ptsA.size() < ptsB.size() ? ptsA.size()/2 : ptsB.size()/2;
     for (int iter = 0; iter < iters; iter++) {
       inliersRef.clear();
       inliersSensed.clear();
       inliersRefMSS.clear();
       inliersSensedMSS.clear();
-      
-       double inlierCount = getInliers(trans);
-       
-      
-      
+      double inlierCount = getInliers(trans);
       if (inlierCount > maxInliers) {
           maxTrans.copy(trans);
           maxInliers = inlierCount;
         }
-      if (inliersRef.size() >= CSThresh) {
-        break;
+      if (inlierCount >= CSThresh) {
+        //logger.info("passed CSThresh of " + CSThresh);
+      //  break;
         
       }
-      /*else {
-        logger.info("iter " + iter + ": inliers found: " + inlierCount);
-        //logger.info("iter " + iter + ": "); 
-        logger.info("dead end");
-        break;
-      }*/
-      double corrThresh = 1-((double)iter/iters) ;
+      
+      double corrThresh = 1-((double)iter/(4*iters)) ;
      getRandomParams(corrThresh);
      boolean succesful = false;
      while(!succesful){
@@ -1025,32 +1036,41 @@ public class CRansacRegister extends CAnalysisWorker{
      logger.info("iter " + iter + ": inliers found: " + inlierCount + " corrT: " + corrThresh);
       //logger.info("iter " + iter + ": "); 
       //trans.print();
+     if ((corrThresh == 1.0) && (inlierCount >  4)) {
+      firstTrans.set(inliersRef, inliersSensed);
+     }
     }
-    getInliers(maxTrans);
+    getInliers(firstTrans);
+    trans.set(inliersRef, inliersSensed);
+    trans.print();
+     
+     
+    logger.info("max inliers: " + maxInliers);
     
-     trans.set(inliersRef, inliersSensed);
-    
-    
-      trans.print();
-    
-    
-    
-      
-    
-//    logger.info("top trans inlier count: " + inlierCount);
-//    if (inlierCount > maxInliers) {
-//      maxTrans.copy(topTrans);
-//    }
 
     int x, y;
     int[] pixel = new int[3], black = {0, 0, 0};
     Point2D.Double ref;
     //trans.print();
-    logger.info("max inliers: " + maxInliers);
+    
     for (int i = 0; i < maxTrans.a.length; i++) {
       logger.info("" + maxTrans.a[i]);
     
     }
+    
+    /*maxTrans.a[0] = 1;
+    maxTrans.a[1] = 0;
+    maxTrans.a[2] = 10;
+    maxTrans.a[3] = 0;
+    maxTrans.a[4] = 1;
+    maxTrans.a[5] = -67;
+    maxTrans.a[6] = 0;
+    maxTrans.a[7] = 0;
+    maxTrans.a[8] = 1;
+    */
+    maxInliers = getInliers(maxTrans);
+    logger.info("maxInliers: " + maxInliers) ;
+    
     System.out.println("");
     //maxTrans.print();
     for (x = 0; x < size.x; x++) {

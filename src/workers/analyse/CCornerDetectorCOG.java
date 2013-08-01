@@ -219,17 +219,30 @@ public class CCornerDetectorCOG extends CAnalysisWorker{
      double [] ret = new double[6];
      
      //ret[0] = Math.pow(dist*perpC, 1-(centerWhiteness/CWI))*whiteDiff;
+     
+     
      ret[0] = (dist*param.distW + perpC*param.perpCW + centerWhiteness*param.centerWhitenessW + whiteDiff*param.whiteDiffW + (dist*centerWhiteness)*param.mixW);
+     //REMOVE BEFORE - test to try edge pts only
+     if (centerWhiteness < 0.5) ret[0] = 0.0;
+     //END
+     
      if (ret[0] > 1) logger.info( "too much in ret[0]: d: " + dist + "." + param.distW 
                                 + " pc: " + perpC + "." + param.perpCW 
                                 + " cw: " + centerWhiteness + "." + param.centerWhitenessW 
                                 + " wd: " + whiteDiff + "." + param.whiteDiffW
                                 + " m: " + dist*centerWhiteness + "." + param.mixW);
+     
+     
+     
      ret[1] = centerWhiteness;
      ret[2] = dist;
      ret[3] = whiteDiff;
      ret[4] = perpC;
      ret[5] = dist*centerWhiteness*perpC*whiteDiff;
+     
+     
+     
+     
      return ret;
      
   }

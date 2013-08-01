@@ -57,7 +57,7 @@ import workers.analyse.paramObjects.CLoGParams;
 //public class CInterestingPoints extends CImageWorker<Double, Void> {
 public class CInterestingPoints extends CAnalysisWorker {
   private static final Logger logger = Logger.getLogger(CImageWorker.class.getName());
-  public static int topPts = 1200; //TODO parametrize
+  public static int topPts = 600; //TODO parametrize
   private BufferedImage imageA, imageB, output;
   private CPointPairs pairsOut;
   private CPointsAndQualities ptqA, ptqB;
