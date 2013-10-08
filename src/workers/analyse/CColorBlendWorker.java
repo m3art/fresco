@@ -1,3 +1,7 @@
+/*
+ * Part of Fresco software under GPL licence
+ * http://www.gnu.org/licenses/gpl-3.0.txt
+ */
 package workers.analyse;
 
 import fresco.CData;
@@ -21,8 +25,14 @@ import javax.swing.JPanel;
  */
 public class CColorBlendWorker extends CAnalysisWorker {
 
+	/** output image */
 	double[][][] rgb;
-	double[] mappingColorA, mappingColorB;
+	
+	/** color for first input image iff differ from second input */
+	double[] mappingColorA;
+	/** color iff second image differs */
+	double[] mappingColorB;
+	
 	private final static Logger logger = Logger.getLogger(CColorBlendWorker.class.getName());
 
 	@Override
