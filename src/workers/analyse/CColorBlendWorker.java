@@ -7,8 +7,8 @@ package workers.analyse;
 import fresco.CData;
 import fresco.swing.CWorkerDialogFactory;
 import image.converters.CBufferedImageToDoubleArray;
+import image.converters.Crgb2Lab;
 import image.converters.Crgb2grey;
-import image.converters.Crgb2hsl;
 import image.converters.Crgb2hsv;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
@@ -24,14 +24,22 @@ import javax.swing.JPanel;
  * @version Aug 2, 2012
  */
 public class CColorBlendWorker extends CAnalysisWorker {
+	
+	private enum DiffMeasure {INTENSITY, MUTUAL_MATCHING};
 
 	/** output image */
-	double[][][] rgb;
+	private double[][][] rgb;
 	
 	/** color for first input image iff differ from second input */
-	double[] mappingColorA;
+	private double[] mappingColorA;
 	/** color iff second image differs */
-	double[] mappingColorB;
+	private double[] mappingColorB;
+	/** Difference matrix - same size as the image */
+	private double[][] diff;
+	/** maximum of difference which has to be colored */
+	private double maxDiff;
+	
+	private DiffMeasure diffMeasure = DiffMeasure.INTENSITY;
 	
 	private final static Logger logger = Logger.getLogger(CColorBlendWorker.class.getName());
 
@@ -39,7 +47,38 @@ public class CColorBlendWorker extends CAnalysisWorker {
 	public String getWorkerName() {
 		return "Color blend worker";
 	}
+	
+	private static double getSaturation(double hue, double value, double diff, double maxDiff) {
+		Crgb2Lab convertor = new Crgb2Lab(Crgb2Lab.WhitePoint.D65);
+		double[] mshMax = Crgb2Lab.lab2Msh(convertor.sRgb2Lab(Crgb2hsv.inverse(new double[]{hue, 255, value})));
+		double labSat = mshMax[1]/maxDiff * diff;
+		
+		double[] lab = {mshMax[0], labSat, mshMax[2]};
+		
+		return Crgb2hsv.convert(convertor.lab2sRgb(Crgb2Lab.msh2Lab(lab)))[1];
+	}
 
+	private void computeIntensityDiff(Raster u, Raster v) {
+		diff = new double[u.getWidth()][u.getHeight()];
+		double[] pixel = new double[3];
+		
+		maxDiff = 0;
+		
+		for(int x=0; x<u.getWidth(); x++) {
+			for(int y=0; y<u.getHeight(); y++) {
+				u.getPixel(x, y, pixel);
+				double uI = Crgb2grey.convertToOneValue(pixel);
+				v.getPixel(x, y, pixel);
+				double vI = Crgb2grey.convertToOneValue(pixel);
+				
+				diff[x][y] = Math.abs(uI-vI);
+				if(maxDiff < diff[x][y]) {
+					maxDiff = diff[x][y];
+				}
+			}
+		}
+	}
+	
 	@Override
 	protected BufferedImage doInBackground() throws Exception {
 		if (CData.showImage[0] == -1 || CData.showImage[2] == -1)
@@ -48,11 +87,19 @@ public class CColorBlendWorker extends CAnalysisWorker {
 		int width = Math.min(CData.getImage(CData.showImage[0]).getWidth(), CData.getImage(CData.showImage[2]).getWidth());
 		int height = Math.min(CData.getImage(CData.showImage[0]).getHeight(), CData.getImage(CData.showImage[2]).getHeight());
 
-		rgb = new double[width][height][3];
-
 		Raster u = CData.getImage(CData.showImage[0]).getImage().getData();
 		Raster v = CData.getImage(CData.showImage[2]).getImage().getData();
-
+		
+		switch(diffMeasure) {
+			case INTENSITY:
+				computeIntensityDiff(u, v);
+				break;
+			case MUTUAL_MATCHING:
+				throw new UnsupportedOperationException();
+		}
+		
+		rgb = new double[width][height][3];
+		
 		double[] pixel = new double[3];
 
 		for(int x=0; x<width; x++) {
@@ -63,10 +110,10 @@ public class CColorBlendWorker extends CAnalysisWorker {
 				double vI = Crgb2grey.convertToOneValue(pixel);
 
 				pixel[0] = (uI > vI) ? mappingColorA[0] : mappingColorB[0];
-				pixel[1] = Math.abs(uI-vI);
 				pixel[2] = (uI + vI)/2;
-// 11/10 hsl[x][y][i] = ((uI*(256-mappingColorA[i])/255 + mappingColorA[i]) + (vI*(256-mappingColorB[i])/255 + mappingColorB[i]))/2;
-				//logger.log(Level.INFO, "Hsv: [{0},{1},{2}]", new Object[]{hsl[x][y][0], hsl[x][y][1], hsl[x][y][2]});
+				
+				pixel[1] = getSaturation(pixel[0], pixel[2], diff[x][y], maxDiff);
+				
 				rgb[x][y] = Crgb2hsv.inverse(pixel);
 			}
 		}
@@ -84,7 +131,7 @@ public class CColorBlendWorker extends CAnalysisWorker {
 	@Override
 	public JDialog getParamSettingDialog() {
 		JPanel panel = new JPanel();
-
+		
 		panel.add(colorChooser1);
 		panel.add(colorChooser2);
 

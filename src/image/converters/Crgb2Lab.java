@@ -225,4 +225,40 @@ public final class Crgb2Lab {
 
 	  return new double[] {x * whitePoint[0], y * whitePoint[1], z * whitePoint[2]};      
     }
+	
+	public double[] sRgb2Lab(double[] rgb) {
+		return xyz2Lab(sRgb2Xyz(rgb));
+	}
+	
+	public double[] lab2sRgb(double[] lab) {
+		return xyz2sRgb(lab2Xyz(lab));
+	}
+	
+	public static double[] lab2Msh(double[] lab) {
+		double m, s, h;
+
+		h = Math.atan(lab[2] / lab[1]);
+
+		double c = Math.sqrt(Math.pow(lab[1], 2) + Math.pow(lab[2], 2));
+
+		s = Math.PI/2 - Math.atan(lab[0] / c);
+
+		m = Math.sqrt(Math.pow(c, 2) + Math.pow(lab[0], 2));
+
+		return new double[] {m,s,h};
+	}
+	
+	public static double[] msh2Lab(double[] msh) {
+		double l, a, b;
+		
+		l = msh[0] * Math.sin(Math.PI/2 - msh[1]);
+		
+		double c = Math.sqrt(Math.pow(msh[0],2) - Math.pow(l,2));
+		
+		a = c * Math.cos(msh[2]);
+		
+		b = c * Math.sin(msh[2]);	
+		
+		return new double[] {l, a, b};
+	}
 }
