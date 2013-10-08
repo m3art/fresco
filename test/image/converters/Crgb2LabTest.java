@@ -61,28 +61,4 @@ public class Crgb2LabTest {
 		
 		assertArrayEquals(lab, Crgb2Lab.msh2Lab(Crgb2Lab.lab2Msh(lab)), 0.01);
 	}
-	
-	@Test 
-	public void testHues() {
-		double step = 1;
-		double[] maxSat = new double[360];
-		double[] maxM = new double[360];
-		
-		Crgb2Lab convertor = new Crgb2Lab(Crgb2Lab.WhitePoint.D65);
-		
-		for(int hue=0; hue<360; hue+=step) {
-			int sat = 255;
-			for(int value=0; value< 256; value++) {
-
-				double[] msh = Crgb2Lab.lab2Msh(convertor.sRgb2Lab(Crgb2hsv.inverse(new double[]{hue, sat, value})));
-
-				if (maxM[hue] < msh[0] + maxSat[hue]/Math.PI*180) {
-					maxSat[hue] = msh[1]; 
-					maxM[hue] = msh[0] + maxSat[hue]/Math.PI*180;
-				}
-
-			}
-			System.out.println("Hue: "+hue+" sat: "+maxSat[hue]/Math.PI*180+" M: "+maxM[hue]);
-		}
-	}
 }
