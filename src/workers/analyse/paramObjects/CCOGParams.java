@@ -12,16 +12,24 @@ package workers.analyse.paramObjects;
  */
 public class CCOGParams extends CExtractorParams{
     //public int windowSize = 13;
+    /** max pixel value */
     public int scale;
+    /** extractor threshold */
     public int threshold; 
+    /** threshold/scale */
     public double thresholdq;
+    /** weight of the distance parameter */
     public double distW;
+    /** weight of the center whiteness parameter */
     public double centerWhitenessW;
+    /** weight of the white difference parameter */
     public double whiteDiffW;
+    /** weight of the perpendicularity check parameter */
     public double perpCW;
+    /** weight of the mix of the above parameters */
     public double mixW;
   
-    
+    /** initializes CCOGParams w/ default values */
     public CCOGParams() {
       this.windowSize = 13;
       this.scale = 256;
