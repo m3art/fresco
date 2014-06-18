@@ -58,6 +58,15 @@ public class CBilinearInterpolation {
             image[(int)topLeft.y+1][(int)topLeft.x], 
             image[(int)topLeft.y+1][(int)topLeft.x+1]);
  	}
+  
+  public static double getValue(Point2D.Double position, int[] image, int w, int h) {
+    Point2D.Double topLeft = new Point2D.Double(Math.floor(position.x), Math.floor(position.y));
+    return getValue(position, 
+            image[(int)topLeft.y*w+(int)topLeft.x], 
+            image[(int)topLeft.y*2+(int)topLeft.x+1], 
+            image[((int)topLeft.y+1)*w + (int)topLeft.x], 
+            image[((int)topLeft.y+1)*w+ (int)topLeft.x+1]);
+ 	}
 
   
 }

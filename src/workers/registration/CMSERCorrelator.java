@@ -13,9 +13,13 @@ import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.util.LinkedList;
+import java.util.logging.Logger;
 import utils.CIdxMapper;
 import utils.metrics.CAreaSimilarityMetric;
 import utils.metrics.CCrossCorrelationMetric;
+import workers.CImageWorker;
+import workers.analyse.paramObjects.CCOGParams;
+import workers.analyse.paramObjects.CLoGParams;
 
 /**
  *
@@ -24,7 +28,7 @@ import utils.metrics.CCrossCorrelationMetric;
 
 
 
-public class CMSERCorrelator {
+public class CMSERCorrelator extends CRegistrationWorker {
   
   public int MSERLowSizeLimit = 9;
   
@@ -35,14 +39,34 @@ public class CMSERCorrelator {
   public int MSERSearchDim = 51;
   int channelCount = 32;
   int maxGrad = 255;
+  private static final Logger logger = Logger.getLogger(CImageWorker.class.getName());
   
+  public CMSERCorrelator(int iMSERdelta, int iMSERLowSizeLimit, BufferedImage reference, BufferedImage sensed) {
+    
+    
+    this.MSERdelta = iMSERdelta;
+    this.MSERLowSizeLimit = iMSERLowSizeLimit;
+    this.map = new CIdxMapper();
+    this.inputA = reference;
+    this.inputB = sensed;
+    
+  
+  }
   public CMSERCorrelator(int iMSERdelta, int iMSERLowSizeLimit) {
     this.MSERdelta = iMSERdelta;
     this.MSERLowSizeLimit = iMSERLowSizeLimit;
     this.map = new CIdxMapper();
+  }
+  public CMSERCorrelator(BufferedImage reference, BufferedImage sensed) {
+    this.MSERdelta = 1;
+    this.MSERLowSizeLimit = 9;
+    this.map = new CIdxMapper();
+    this.inputA = reference;
+    this.inputB = sensed;
     
   
   }
+  
   
   //get the Maximally stable region from information about region sizes for different intensities
   public int getMSERIntensity(int[] sizes) {
@@ -234,8 +258,7 @@ public class CMSERCorrelator {
     
     //get transform matrix from normalized to original MSER
     Matrix normToRegion = mVectors.times(mValues);
-    System.out.println("NormToRegion: ");
-    System.out.println(normToRegion.get(0,0) + ", " + normToRegion.get(0,1) + ", " + normToRegion.get(1,0) + ", " + normToRegion.get(1,1));
+    
     //transform the mser into a 2D table
     //get values of original image instead of true/false
     double[][] origMser = new double[h][w];
@@ -279,20 +302,18 @@ public class CMSERCorrelator {
     for (int x = 1; x < w-1; x++) {
       for (int y = 1; y < h-1; y++) {
         //if (mser[y*h+x+1] == 0 || mser[y*h+x-1] == 0 || mser[(y+1)*h+x] == 0 || mser[(y-1)*h+x] == 0) continue;
+        
         double gradX = (region[y][x+1] - region[y][x-1])/maxGrad;
         double gradY = (region[y+1][x] - region[y-1][x])/maxGrad;
         double gradSize = Math.sqrt(gradX*gradX + gradY*gradY);
         if (gradSize == 0) continue;
-        //double rotSin = Math.asin(gradY/gradSize);
         double rot = Math.acos(gradX/gradSize);
-        //if (gradY < 0) rot = 2*Math.PI - rot;
         rot /= Math.PI;
-        if (rot == 1) rot = 0; //safeguard to not exceed channelCount, rot by 2*Pi (~rot==1) is equiv to no rot(~rot==0).
+        //gradY > 0 indicates angle between PI and 2*PI.
         if (gradY > 0) {
-          rot -= 2.0; 
-          rot *= -1.0;
+           rot = 2.0 - rot;
         }
-        channelHist[(int)((rot/2.0)*(double)channelCount)]++;
+        channelHist[(int)((rot/(2.0))*(double)channelCount)]++;
       }
     }
     int maxChannel = -1;
@@ -310,7 +331,7 @@ public class CMSERCorrelator {
     double[] rotated = new double[w*h];
     // this is the angle by which we suspect the region is rotated from the norm position
     //therefore, we look for the pixel required for the rotated region at a position offset by this rotation in the original region
-    double theta = -1*(double)channel/channelCount * Math.PI;
+    double theta = -1*(double)channel/channelCount * 2 * Math.PI;
     //System.out.println("rot by " + theta);
     int centerX = w/2;
     int centerY = h/2;
@@ -339,11 +360,22 @@ public class CMSERCorrelator {
     int maxChannel = getMaxChannel(normalized, w, h, channelCount, maxGrad);
     return rotateByChannel(normalized, maxChannel, channelCount, w, h);
   }
+  
+  
   public double[][] getCorrs() {
     int dim = MSERSearchDim/2;
     double[][] result = new double[ptsA.size()][ptsB.size()];
     Raster rasterA = (new Crgb2grey()).convert(inputA).getData();
     Raster rasterB = (new Crgb2grey()).convert(inputB).getData();
+    LinkedList<double[]> APlus = new LinkedList<>();
+    LinkedList<double[]> AMinus = new LinkedList<>();
+    LinkedList<double[]> BPlus = new LinkedList<>();
+    LinkedList<double[]> BMinus = new LinkedList<>();
+    LinkedList<Integer> APlusIdx = new LinkedList<>();
+    LinkedList<Integer> AMinusIdx = new LinkedList<>();
+    LinkedList<Integer> BPlusIdx = new LinkedList<>();
+    LinkedList<Integer> BMinusIdx = new LinkedList<>();
+    
     CCrossCorrelationMetric CCmetric = new CCrossCorrelationMetric(inputA, inputB, MSERSearchDim, CAreaSimilarityMetric.Shape.RECTANGULAR);
     for (int i = 0; i < ptsA.size() ; i++) { 
       Point2D.Double a = ptsA.getPoint(i);
@@ -352,29 +384,80 @@ public class CMSERCorrelator {
       int[] currentA = null;        
       if (!map.isNearEdge(a, rasterA.getWidth(), rasterA.getHeight(), dim)) {
         currentA = rasterA.getSamples(AX-dim, AY-dim, MSERSearchDim, MSERSearchDim, 0, currentA);
-        double [] APlus = getNormFromRegion(currentA, dim, dim);
+        try {
+          double [] MSERAPlus = getNormFromRegion(currentA, dim, dim);
+          APlus.push(MSERAPlus);
+          APlusIdx.push(i);
+        }
+        catch(java.lang.RuntimeException e) {
+        }
         //invert area
         for (int pos = 0; pos < currentA.length; pos++) {
           currentA[pos] = 255-currentA[pos];
+        };
+        try {
+          double [] MSERAMinus = getNormFromRegion(currentA, dim, dim);
+          AMinus.push(MSERAMinus);
+          AMinusIdx.push(i);
         }
-        double [] AMinus = getNormFromRegion(currentA, dim, dim);
+        catch(java.lang.RuntimeException e) {
+        }
+
       }
     }
     for (int j = 0; j < ptsB.size() ; j++) { 
+      
       Point2D.Double b = ptsB.getPoint(j);
       int BX = (int)b.x;
       int BY = (int)b.y;
       int[] currentB = null;        
       if (!map.isNearEdge(b, rasterB.getWidth(), rasterB.getHeight(), dim)) {
         currentB = rasterB.getSamples(BX-dim, BY-dim, MSERSearchDim, MSERSearchDim, 0, currentB);
-        double [] BPlus = getNormFromRegion(currentB, dim, dim);
+        try {  
+          double [] MSERBPlus = getNormFromRegion(currentB, dim, dim);
+          BPlus.push(MSERBPlus);
+          BPlusIdx.push(j);
+        }
+        catch(java.lang.RuntimeException e) {
+        }
+
         //invert area
         for (int pos = 0; pos < currentB.length; pos++) {
           currentB[pos] = 255-currentB[pos];
         }
-        double [] BMinus = getNormFromRegion(currentB, dim, dim);
+        try {
+          double [] MSERBMinus = getNormFromRegion(currentB, dim, dim);
+          BMinus.push(MSERBMinus);
+          BMinusIdx.push(j);
+        }
+        catch(java.lang.RuntimeException e) {
+        }
+
       }
     }
+    double maxCorrVal = 0.0;
+    while (APlusIdx.size() > 0) {
+      int i = APlusIdx.removeFirst();
+      double[] inputI = APlus.removeFirst();
+      for (int y = 0; y < BPlus.size(); y++) {
+        int j = BPlusIdx.get(y);
+        double[] inputJ = BPlus.get(y);
+        result[i][j] = CCmetric.getValue(inputI, inputJ);
+      }
+    }
+    while (AMinusIdx.size() > 0) {
+      int i = AMinusIdx.removeFirst();
+      double[] inputI = AMinus.removeFirst();
+      for (int y = 0; y < BMinus.size(); y++) {
+        int j = BMinusIdx.get(y);
+        double[] inputJ = BMinus.get(y);
+        if (CCmetric.getValue(inputI, inputJ) > result[i][j])  result[i][j] = CCmetric.getValue(inputI, inputJ) ;
+        if (result[i][j] > maxCorrVal) maxCorrVal = result[i][j];
+        
+        
+      }
+    }
+    System.out.println(maxCorrVal);
     return result;
   }
   
@@ -386,8 +469,27 @@ public class CMSERCorrelator {
   
   
   
-  protected double[][] doInBackground() throws Exception {
-    throw new UnsupportedOperationException("Not supported yet.");
+  protected BufferedImage doInBackground() throws Exception {
+    System.out.println("running MSER correlator");
+    CCOGParams pc = new CCOGParams();
+    pc.centerWhitenessW = 0.13;
+    pc.distW = 0.05;
+    pc.perpCW = 0.4;
+    pc.whiteDiffW = 0.2;
+    pc.mixW = 0.21;
+    pc.normalizeWeights();
+    pc.windowSize = 23;
+    CLoGParams pl = new CLoGParams();
+    CInterestingPoints extractor;
+    extractor = new CInterestingPoints(inputA, inputB, CInterestingPoints.Cornerer.COG, CInterestingPoints.Edger.LOG, pc, pl, 0,0);
+    
+    logger.info("getting pts from A");
+    this.ptsA = extractor.getPoints(inputA);
+    logger.info("getting pts from B");
+    this.ptsB = extractor.getPoints(inputB);
+    logger.info("getting correlations B");
+    this.getCorrs();
+    return inputA;
   }
   
 }

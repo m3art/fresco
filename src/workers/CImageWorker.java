@@ -16,12 +16,9 @@ import workers.analyse.paramObjects.CHarrisParams;
 import workers.analyse.paramObjects.CLoGParams;
 import workers.correction.CAdaptiveHistogramEnhancing;
 import workers.correction.CColorShiftWorker;
-import workers.registration.CInterestingPoints;
+import workers.registration.*;
 import workers.registration.CInterestingPoints.Cornerer;
 import workers.registration.CInterestingPoints.Edger;
-import workers.registration.CPerspectiveTransformationWorker;
-import workers.registration.CPointPairs;
-import workers.registration.CRansacRegister;
 import workers.registration.refpointga.CRefPointMarker;
 import workers.segmentation.CColorQuantizer;
 import workers.tools.CRotation;
@@ -96,14 +93,16 @@ public abstract class CImageWorker<T, V> extends SwingWorker<T, V> implements II
         CLoGParams pe = new CLoGParams();
         return new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), Cornerer.COG, Edger.LOG, pic, pe, 0, 0);
       case harris:
+        
         CHarrisParams ph = new CHarrisParams();
         return new CHarris(CData.getImage(CData.showImage[0]).getImage(), ph);
       case COG:
           CCOGParams pc = new CCOGParams();
         return new CCornerDetectorCOG(CData.getImage(CData.showImage[0]).getImage(), pc);
       case ransac:
-        
         return new CRansacRegister(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage());
+      case MSERCorrelator:
+        return new CMSERCorrelator(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage());
       default:
 
 	return null;

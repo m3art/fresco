@@ -50,6 +50,7 @@ public interface IAction {
     harris,
     COG,
     ransac,
+    MSERCorrelator,
 		// correction
 		ahe,
 		colorShift,

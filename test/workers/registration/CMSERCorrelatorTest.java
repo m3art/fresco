@@ -23,7 +23,7 @@ import utils.metrics.CCrossCorrelationMetric;
  *
  * @author Jakub
  */
-public class CMSERCorrelatorTest {
+public class CMSERCorrelatorTest  {
   
   public CMSERCorrelatorTest() {
   }
@@ -133,8 +133,6 @@ public class CMSERCorrelatorTest {
     int w = 7;
     int h = 7;
     CMSERCorrelator instance = new CMSERCorrelator(2, 9);
-//
-    
     
     int [] expResult = {
       0, 0, 0, 0, 0, 0, 0, 
@@ -147,7 +145,6 @@ public class CMSERCorrelatorTest {
     };
     int[] result = instance.getMserPlus(surround, w, h);
     assertArrayEquals(expResult, result);
-//    fail("The test case is a prototype.");
   }
 
 
@@ -164,13 +161,12 @@ public class CMSERCorrelatorTest {
     Point2D.Double expResult = new Point2D.Double(1.5, 1.25);
     Point2D.Double result = CMSERCorrelator.getCOG(mat, w, h);
     assertEquals(expResult, result);
-    //fail("The test case is a prototype.");
   }
 
 
   @Test
   public void testGetNormalizedRegion() {
-    
+    //TEST: Create a mser shape to normalize. Underlying region is uniform
     System.out.println("getNormalizedRegion");
     int w = 51;
     int h = 51;
@@ -182,47 +178,42 @@ public class CMSERCorrelatorTest {
         if ((i+j < 78) & (i+j >15) && (i-j > -11) && (i-j < 33)) {
           mserA[j*w+i] = 1;
           regionA[j*w+i] = 1000;
-          //System.out.print(1 + ", ");
-        }
-        else {
-          //System.out.print(0 + ", ");
         }
       }
-      //System.out.println("");
     }
       
-    double[][] covA = CMSERCorrelator.getCovMatrix(mserA, w, h);
-    System.out.println("A:");
-    System.out.print(covA[0][0] + ", ");
-    System.out.println(covA[0][1] + ", ");
-    System.out.print(covA[1][0] + ", ");
-    System.out.println(covA[1][1]);
-      System.out.println("");
-    
-    //double[][] expResult = null;
-    System.out.println("A:");
     double[][] resultA = CMSERCorrelator.getNormalizedRegion(regionA, mserA, w, h);
+    //Convert to int for getCovMatrix
     int[] resA = new int[w*h];
     for (int i = 0; i < w; i++) {
       for (int j = 0; j < h; j++) {
-        //System.out.print(resultA[j][i] + ", ");
         resA[j*h+i] = (int)resultA[j][i];
-        //System.out.print(resA[j*h+i] + ", ");
       }
-      //System.out.println("");
     }
-    covA = CMSERCorrelator.getCovMatrix(resA, w, h);System.out.println("A:");
-    System.out.print(covA[0][0] + ", ");
-    System.out.println(covA[0][1] + ", ");
-    System.out.print(covA[1][0] + ", ");
-    System.out.println(covA[1][1]);
-      System.out.println("");
-    //assertEquals(expResult, result);
-    //fail("The test case is a prototype.");
+    
+    /*
+     * Covariance matrix of normalized region should be (close to) diagonal. (|A[0][0]| >> |A[0][1]|)
+     *   Also A[0][0] ~ A[1][1]
+     *   holds if region is uniform, as getNormalizedRegion is concerned w/ shape of region only
+     * -elements not on diagonal can be nonzero due to rounding errors and interpolation errors
+     * -getCovMatrix accepts int [], so rounding is necessary
+    */
+    
+    //this should hold for any shape of mser
+    double [][] covA = CMSERCorrelator.getCovMatrix(resA, w, h);System.out.println("A:");
+    assertEquals(0, covA[0][1], 0.01*covA[0][0]);
+    assertEquals(0, covA[1][0], 0.01*covA[0][0]);
+    assertEquals(covA[0][0], covA[1][1], 0.01*covA[0][0]);
+    
+    
+
   }
   @Test
   public void testGetCovMatrix() {
     System.out.println("getCovMatrix");
+    int w = 5;
+    int h = 5;
+    
     int[] mat = {
       0, 0, 1, 0, 0,
       0, 0, 1, 0, 0,
@@ -230,16 +221,6 @@ public class CMSERCorrelatorTest {
       0, 0, 1, 0, 0,
       0, 0, 1, 0, 0,
     };
-    double[][] mser = {
-      { 0, 0, 1, 0, 0},
-      { 0, 0, 1, 0, 0},
-      { 0, 1, 1, 1, 0},
-      { 0, 0, 1, 0, 0},
-      { 0, 0, 1, 0, 0}
-    };
-    int w = 5;
-    int h = 5;
-    double[][] expResult = null;
     double[][] result = CMSERCorrelator.getCovMatrix(mat, w, h);
     double sum = 0.0;
     int ct = 0;
@@ -251,127 +232,49 @@ public class CMSERCorrelatorTest {
       }
     }
     double test = sum/ct;
-    System.out.println(test);
+    /* 
+     * Covariance matrix is used for normalization
+     * this test only tests if the Cov matrix scales properly
+     * if the Cov matrix scales properly && is diagonal
+     * then the covariance of the scaled region should be 1.0     
+     *   
+     */
     assertEquals(test, 1.0, 0.01);
     
-    /*
-    
-    System.out.print(result[0][0] + ", ");
-    System.out.println(result[0][1] + ", ");
-    System.out.print(result[1][0] + ", ");
-    System.out.println(result[1][1]);
-    Matrix mCov = new Matrix(result);
-    Matrix mVectors = mCov.eig().getV();
-    Matrix mValues = mCov.eig().getD();
-    System.out.print(mVectors.get(0, 0) + ", ");
-    System.out.println(mVectors.get(0, 1) + ", ");
-    System.out.print(mVectors.get(1, 0) + ", ");
-    System.out.println(mVectors.get(1, 1));
-    mValues.set(0, 0, Math.sqrt(mValues.get(0, 0)) );
-    mValues.set(1, 1, Math.sqrt(mValues.get(1, 1)) );
-    System.out.print(mValues.get(0, 0) + ", ");
-    System.out.println(mValues.get(0, 1) + ", ");
-    System.out.print(mValues.get(1, 0) + ", ");
-    System.out.println(mValues.get(1, 1));
-    
-    int centerX = w/2;
-    int centerY = h/2;
-    Matrix mCOG = new Matrix(2, 1);
-    mCOG.set(0, 0, centerX);
-    mCOG.set(1, 0, centerY);
-    
-    double[][] normalized = new double[h][w];
-    for (int x = 0; x < w; x++) {
-      for (int y = 0; y < h; y++){
-        //get the current point (x, y) as a JAMA Matrix
-        double[][] pt = new double[2][1];
-        pt[0][0] = (x-centerX); 
-        pt[1][0] = (y-centerY);
-        Matrix X = new Matrix(pt);
-        Matrix tmp = mValues.times(X);
-        Matrix tmp2 = mVectors.times(tmp);
-        tmp2.plusEquals(mCOG);
-        double val = 0.0;
-        sum += X.get(0,0) * X.get(0,0) * (1/mValues.get(0,0)) * (1/mValues.get(0,0)) * mser[y][x];
-        ct += mser[y][x];
-        if (tmp2.get(0,0) >= w-1 || tmp2.get(1,0) >= h-1 || tmp2.get(0,0) < 0 || tmp2.get(1,0) < 0) {
-           normalized[y][x] = 0.0;
-        }
-        else {
-          val = CBilinearInterpolation.getValue(new Point2D.Double(tmp2.get(0, 0), tmp2.get(1, 0)), mser);
-          
-          normalized[y][x] = val;
-        }
-      }
-    }
-    System.out.println(sum/ct);
-    for (int y = 0; y < h; y++){ 
-      for (int x = 0; x < w; x++) {
-        
-        System.out.print(normalized[y][x] + ", ");
-      }
-      System.out.println("");
-    }
-    System.out.println("");
-    
-    double[][] cov = new double[2][2];
-    double norm = 0;
-    Point2D.Double COGnorm = new Point2D.Double(centerX, centerY);
-    for (int x1 = 0; x1 < w; x1++) {
-      for (int y1 = 0; y1 < h; y1++) {
-        cov[0][0] += (x1-COGnorm.x) * (x1-COGnorm.x)*normalized[y1][x1];
-        cov[0][1] += (x1-COGnorm.x) * (y1-COGnorm.y)*normalized[y1][x1];
-        cov[1][0] += (y1-COGnorm.y) * (x1-COGnorm.x)*normalized[y1][x1];
-        cov[1][1] += (y1-COGnorm.y) * (y1-COGnorm.y)*normalized[y1][x1];
-        norm+=normalized[y1][x1];
-      }
-    }
-    cov[0][0] /= norm;
-    cov[0][1] /= norm;
-    cov[1][0] /= norm;
-    cov[1][1] /= norm;
-    
-    System.out.print(cov[0][0] + ", ");
-    System.out.println(cov[0][1] + ", ");
-    System.out.print(cov[1][0] + ", ");
-    System.out.println(cov[1][1]);
-    
-    */
-    //assertArrayEquals(expResult, result);
-    //fail("The test case is a prototype.");
   }
 
   @Test
   public void testGetMaxChannel() {
     System.out.println("getMaxChannel");
-    double[][] region = {
+    double[][] region1 = {
       {1, 1, 1, 1, 1, 1, 1},
-      {1, 1, 1, 1, 10, 10, 1},
+      {1, 1, 1, 1, 10, 10, 10},
       {1, 1, 1, 10, 10, 10, 1},
-      {1, 1, 10, 10, 10, 10, 1},
-      {1, 10, 10, 10, 10, 10, 1},
-      {1, 10, 10, 10, 10, 10, 1},
+      {1, 1, 10, 10, 10, 10, 10},
+      {1, 10, 10, 10, 10, 10, 10},
+      {1, 10, 10, 10, 10, 10, 10},
       {1, 1, 1, 1, 1, 1, 1}
     };
-    
-    /*int[] mser = {
-      1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1, 1, 1, 1, 1
-    };*/
+    double[][] region2 = {
+      {1, 1, 1, 1, 1, 10, 10},
+      {1, 1, 1, 1, 1, 10, 10},
+      {1, 1, 1, 1, 1, 10, 10},
+      {1, 1, 1, 1, 1, 10, 10},
+      {1, 1, 1, 1, 1, 10, 10},
+      {1, 1, 1, 1, 1, 10, 10},
+      {1, 1, 1, 1, 1, 10, 10},
+    };
     int w = 7;
     int h = 7;
     int channelCount = 8;
     int maxGrad = 255;
-    int expResult = 0;
-    int result = CMSERCorrelator.getMaxChannel(region, w, h, channelCount, maxGrad);
-    System.out.println(result);
-    //assertEquals(expResult, result);
-    //fail("The test case is a prototype.");
+    int expResult1 = 7;
+    int result1 = CMSERCorrelator.getMaxChannel(region1, w, h, channelCount, maxGrad);
+    assertEquals(expResult1, result1);
+    int expResult2 = 0;
+    int result2 = CMSERCorrelator.getMaxChannel(region2, w, h, channelCount, maxGrad);
+    assertEquals(expResult2, result2);
+    
   }
 
   @Test
@@ -382,11 +285,11 @@ public class CMSERCorrelatorTest {
       {1, 1, 1, 1, 1, 1, 1},
       {1, 1, 1, 1, 1, 1, 1},
       {1, 1, 10, 10, 10, 1, 1},
-      {1, 1, 1, 1, 1, 1, 1},
+      {1, 1, 10, 1, 1, 1, 1},
       {1, 1, 1, 1, 1, 1, 1},
       {1, 1, 1, 1, 1, 1, 1}
     };
-    int channel = 0;
+    int channel = 4;
     int channelCount = 8;
     int w = 7;
     int h = 7;
@@ -404,94 +307,106 @@ public class CMSERCorrelatorTest {
   }
   @Test
   public void corrTest() {
-    int w = 7;
-    int h = 7;
-    int [] region1 = {
-        0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 81, 0, 0, 0,
-        0, 0, 33, 115, 66, 25, 0,
-        0, 0, 0, 40, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0,
-    };
+  /*
+   * Comprehensive test of a big part of the MSER correlator
+   * Generates a random region and using a random affine transformation, 
+   *   generates its transofrmed counterpart.
+   * The scaling part of the transformation is limited, as a significant portion
+   *   of the transformed region could be outside of the frame.
+   * This does not nullify the test - any real transformation will be between 
+   *   MSERs that fit in the same frame, so no radical scaling is expected
+   * The test should show that the Cross-Correlation between the original 
+   *   regions is orders of magnitude smaller than the CC of those normalized 
+   *   using MSERs, thus showing that the MSERs help in matching regions 
+   * differing by affine transformation only
+   */
     
     
-    int [] mser1 = {
-        0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 1, 0, 0, 0,
-        0, 0, 1, 1, 1, 1, 0,
-        0, 0, 0, 1, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0,
-   };
-    int [] region2 = {
-        0, 0, 0, 0, 0, 0, 0,
-        0, 0, 83, 0, 0, 0, 0,
-        0, 131, 165, 90, 0, 0, 0,
-        0, 0, 116, 0, 0, 0, 0,
-        0, 0, 75, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0,
-    };
-    int [] mser2 = {
-        0, 0, 0, 0, 0, 0, 0,
-        0, 0, 1, 0, 0, 0, 0,
-        0, 1, 1, 1, 0, 0, 0,
-        0, 0, 1, 0, 0, 0, 0,
-        0, 0, 1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0,
-    };
     
-    double [][] normalized1 = CMSERCorrelator.getNormalizedRegion(region1, mser1, w, h);
-    double [][] normalized2 = CMSERCorrelator.getNormalizedRegion(region2, mser2, w, h);
+    int w = 31;
+    int h = 31;
+    int max = 255;
+    int regionOrig [] = new int[w*h];
+    int mserOrig [] = new int[w*h];
+    
+    for (int i = 0; i < w; i++) {
+      for (int j = 0; j < h; j++) {
+        regionOrig[j*w+i] = (int)(Math.random()*max);
+      }
+    }
+    for (int i = 1; i < w-1; i++) {
+      for (int j = 1; j < h-1; j++) {
+        double coin=  Math.random();
+        if (coin >= 0.5){
+          mserOrig[j*w+i] = 1;
+        }
+        else {
+          mserOrig[j*w+i] = 0;
+        }
+      }
+    }
+    Matrix transform = new Matrix(2,2);
+    transform.set(0, 0, (Math.random()/4)+1.0);
+    transform.set(1, 1, (Math.random()/4)+1.0);
+    
+    transform.set(1, 0, 2.0*Math.random()-1.0);
+    transform.set(0, 1, 2.0*Math.random()-1.0);
+    int regionTransform [] = new int[w*h];
+    int mserTransform [] = new int[w*h];
+    
+    for (int x = 0; x < w; x++) {
+      for (int y = 0; y < h; y++){
+        //get the current point (x, y) as a JAMA Matrix
+        double[][] pt = new double[2][1];
+        pt[0][0] = (x-w/2); 
+        pt[1][0] = (y-h/2);
+        Matrix X = new Matrix(pt);
+        //transform the point using the normalized -> original MSER transform matrix
+        Matrix origCoords = transform.times(X);
+        if (origCoords.get(0,0) >= w-1 || origCoords.get(1,0) >= h-1 || origCoords.get(0,0) < 0 || origCoords.get(1,0) < 0) {
+          regionTransform[y*w+x] = 0;
+          mserTransform[y*w+x] = 0;
+        }
+        //otherwise interpolate from original MSER using calculated coords
+        else {
+          regionTransform[y*w+x] = (int)CBilinearInterpolation.getValue(new Point2D.Double(origCoords.get(0, 0), origCoords.get(1, 0)), regionOrig, w, h);
+          double mserCoin = (int)CBilinearInterpolation.getValue(new Point2D.Double(origCoords.get(0, 0), origCoords.get(1, 0)), regionOrig, w, h);
+          if (mserCoin >= (y+x)/(w+h) )
+            mserTransform[y*w+x] = 1;
+          else  {
+            mserTransform[y*w+x] = 0;
+          }
+        }
+      }
+    }
+    double [][] normalized1 = CMSERCorrelator.getNormalizedRegion(regionOrig, mserOrig, w, h);
+    double [][] normalized2 = CMSERCorrelator.getNormalizedRegion(regionTransform, mserTransform, w, h);
     int channel1 = CMSERCorrelator.getMaxChannel(normalized1, w, h, 8, 255);
     int channel2 = CMSERCorrelator.getMaxChannel(normalized2, w, h, 8, 255);
     double [] res1 = CMSERCorrelator.rotateByChannel(normalized1, channel1, 8, w, h);
     double [] res2 = CMSERCorrelator.rotateByChannel(normalized2, channel2, 8, w, h);
     
+    for (int x = 0; x < w; x++) {
+      for (int y = 0; y < h; y++){
+        System.out.print(mserOrig[y*w+x] + ", ");
+      }
+      System.out.println();
+    }
+    
+    
     CCrossCorrelationMetric CCmetric = new CCrossCorrelationMetric(new BufferedImage(1,1,1), new BufferedImage(1,1,1), 7, CAreaSimilarityMetric.Shape.RECTANGULAR);
     
-    double CrossCorr = CCmetric.getValue(res1, res2);
-    System.out.println("CrossCorr: " + CrossCorr);
-    int [] res1int = new int[w*h];
-    int [] res2int = new int[w*h];
-    for (int i = 0; i < w; i++) {
-      for (int j = 0; j < h; j++) {
-        //System.out.print(res1[j*h+i] + ", ");
-        res1int[j*h+i] = (int)(10000 * res1[j*h+i]);
-        System.out.print(res1int[j*h+i] + ", ");
-      }
-      System.out.println("");
+    double mserCrossCorr = CCmetric.getValue(res1, res2);
+    System.out.println("MSER CrossCorr: " + mserCrossCorr);
+    double [] origDouble = new double[w*h];
+    double [] transDouble = new double[w*h];
+    for (int i =0; i<regionOrig.length; i++) {
+      origDouble[i] = (double) regionOrig[i] * mserOrig[i];
+      transDouble[i] = (double) regionTransform[i] * mserTransform[i];
     }
-    
-    System.out.println("");
-    for (int i = 0; i < w; i++) {
-      for (int j = 0; j < h; j++) {
-        //System.out.print(res2[j*h+i] + ", ");
-        res2int[j*h+i] = (int)(10000 * res2[j*h+i]);
-        System.out.print(res2int[j*h+i] + ", ");
-      }
-      System.out.println("");
-    }
-    Point2D.Double COG1 = CMSERCorrelator.getCOG(res1int, w,h);
-    Point2D.Double COG2 = CMSERCorrelator.getCOG(res2int, w,h);
-    double[][] cov1 = CMSERCorrelator.getCovMatrix(res1int, w, h);
-    double[][] cov2 = CMSERCorrelator.getCovMatrix(res2int, w, h);
-    System.out.println(COG1.x + ", " + COG1.y);
-    System.out.println(COG2.x + ", " + COG2.y);
-    System.out.println("");
-    System.out.print(cov1[0][0] + ", ");
-    System.out.println(cov1[0][1] + ", ");
-    System.out.print(cov1[1][0] + ", ");
-    System.out.println(cov1[1][1]);
-    System.out.println("");
-    System.out.print(cov2[0][0] + ", ");
-    System.out.println(cov2[0][1] + ", ");
-    System.out.print(cov2[1][0] + ", ");
-    System.out.println(cov2[1][1]);
-    
+    double randomCrossCorr = CCmetric.getValue(origDouble, transDouble);
+    System.out.println("RANDOM CrossCorr: " + randomCrossCorr);
+    assertTrue((mserCrossCorr / randomCrossCorr) > 100);
+   
   }
 }

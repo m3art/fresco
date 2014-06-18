@@ -31,7 +31,7 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
 	// edit menu items
 	CMenuItem fixImage, fixSegments, rename, capture;
 	// analysis items
-	CMenuItem diff, sobel, laplacian, wavelets, mutualInfo, pca, patternAnalysis, intPoints, harris, COG, ransac;
+	CMenuItem diff, sobel, laplacian, wavelets, mutualInfo, pca, patternAnalysis, intPoints, harris, COG, ransac, MSER;
 	// correction items
 	CMenuItem ahe, colorShift;
 	// transform items
@@ -223,6 +223,11 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
     ransac = new CMenuItem("Ransac registrator", RegID.ransac);
 		ransac.addActionListener(CData.userActionListener);
 		analysisMenu.add(ransac);
+    
+    MSER = new CMenuItem("MSER correlator", RegID.MSERCorrelator);
+		MSER.addActionListener(CData.userActionListener);
+		analysisMenu.add(MSER);
+    
 	}
 
 	public void checkEnabled() {
