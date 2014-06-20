@@ -20,6 +20,9 @@ import javax.swing.JDialog;
 import javax.swing.JPanel;
 
 /**
+ * This algorithm was published at Digital Heritage 2013. If you use it for 
+ * scientific purposes, please cite us.
+ * 
  * @author gimli
  * @version Aug 2, 2012
  */
