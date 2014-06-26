@@ -23,17 +23,9 @@ import utils.metrics.CCrossCorrelationMetric;
  *
  * @author Jakub
  */
-public class CMSERCorrelatorTest  {
+public class CMSERCorrelatorTest  extends CMSERCorrelator {
   
   public CMSERCorrelatorTest() {
-  }
-
-  @BeforeClass
-  public static void setUpClass() throws Exception {
-  }
-
-  @AfterClass
-  public static void tearDownClass() throws Exception {
   }
 
   @Test
@@ -159,7 +151,7 @@ public class CMSERCorrelatorTest  {
     int w = 3;
     int h = 3;
     Point2D.Double expResult = new Point2D.Double(1.5, 1.25);
-    Point2D.Double result = CMSERCorrelator.getCOG(mat, w, h);
+    Point2D.Double result = CMSERCorrelator.getCenterOfGravity(mat, w, h);
     assertEquals(expResult, result);
   }
 
@@ -224,7 +216,7 @@ public class CMSERCorrelatorTest  {
     double[][] result = CMSERCorrelator.getCovMatrix(mat, w, h);
     double sum = 0.0;
     int ct = 0;
-    Point2D.Double COG = CMSERCorrelator.getCOG(mat, w, h);
+    Point2D.Double COG = CMSERCorrelator.getCenterOfGravity(mat, w, h);
     for (int x1 = 0; x1 < w; x1++) {
       for (int y1 = 0; y1 < h; y1++) {
         sum += (1/result[0][0]) * (x1-COG.x) * (x1-COG.x) * mat[y1*w+x1];
