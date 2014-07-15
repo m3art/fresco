@@ -10,86 +10,136 @@ package workers.analyse.paramObjects;
  *
  * @author Jakub
  */
-public class CCOGParams extends CExtractorParams{
-    //public int windowSize = 13;
-    /** max pixel value */
-    public int scale;
-    /** extractor threshold */
-    public int threshold; 
-    /** threshold/scale */
-    public double thresholdq;
-    /** weight of the distance parameter */
-    public double distW;
-    /** weight of the center whiteness parameter */
-    public double centerWhitenessW;
-    /** weight of the white difference parameter */
-    public double whiteDiffW;
-    /** weight of the perpendicularity check parameter */
-    public double perpCW;
-    /** weight of the mix of the above parameters */
-    public double mixW;
-  
-    /** initializes CCOGParams w/ default values */
-    public CCOGParams() {
+public class CCOGParams extends CExtractorParams {
+  //public int windowSize = 13;
+
+  /**
+   * max pixel value
+   */
+  public int scale;
+  /**
+   * extractor threshold
+   */
+  public int threshold;
+  /**
+   * threshold/scale
+   */
+  public double thresholdq;
+  /**
+   * weight of the distance parameter
+   */
+  public double distW;
+  /**
+   * weight of the center whiteness parameter
+   */
+  public double centerWhitenessW;
+  /**
+   * weight of the white difference parameter
+   */
+  public double whiteDiffW;
+  /**
+   * weight of the perpendicularity check parameter
+   */
+  public double perpCW;
+  /**
+   * weight of the mix of the above parameters
+   */
+  public double mixW;
+
+  public enum values {
+
+    def,
+    learned
+  };
+
+  /**
+   * initializes CCOGParams w/ default values
+   */
+  public CCOGParams(values vals) {
+    if (vals == values.def) {
       this.windowSize = 13;
       this.scale = 256;
-      this.threshold = 30; 
+      this.threshold = 30;
       this.distW = 0.2;
       this.centerWhitenessW = 0.2;
       this.whiteDiffW = 0.2;
       this.perpCW = 0.2;
       this.mixW = 0.2;
-      this.thresholdq = (double)this.threshold/(double)this.scale;
+      this.thresholdq = (double) this.threshold / (double) this.scale;
+    } else if (vals == values.learned) {
+      this.windowSize = 13;
+      this.scale = 256;
+      this.threshold = 30;
+      this.distW = 0.05;
+      this.centerWhitenessW = 0.13;
+      this.whiteDiffW = 0.2;
+      this.perpCW = 0.4;
+      this.mixW = 0.21;
+      this.thresholdq = (double) this.threshold / (double) this.scale;
+
 
     }
-    
-    public CCOGParams(int windowSizeI, int scaleI, int thresholdI, double distWI, double centerWhitenessWI, double whiteDiffWI, double perpCWI, double mixWI) {
-      this.windowSize = windowSizeI;
-      this.scale = scaleI;
-      this.threshold = thresholdI; 
-      this.distW = distWI;
-      this.centerWhitenessW = centerWhitenessWI;
-      this.whiteDiffW =  whiteDiffWI;
-      this.perpCW = perpCWI;
-      this.mixW = mixWI;
-      this.thresholdq = (double)this.threshold/(double)this.scale;
-      normalizeWeights();
-    }
-    
-    public double getRegularization() {
-      return (distW-0.2)*(distW-0.2) + 
-              (whiteDiffW-0.2)*(whiteDiffW-0.2) + 
-              (centerWhitenessW-0.2)*(centerWhitenessW-0.2) + 
-              (perpCW-0.2)*(perpCW-0.2) +
-              (mixW-0.2)*(mixW-0.2);
-    
-    
-    }
-    
-    public void normalizeWeights() {
-      if (distW < 0) distW = 0.001;
-      if (perpCW < 0) perpCW = 0.001;
-      if (centerWhitenessW < 0) centerWhitenessW = 0.001;
-      if (whiteDiffW < 0) whiteDiffW = 0.001;
-      if (mixW < 0) mixW = 0.001;
-      double sum = distW + centerWhitenessW + whiteDiffW + perpCW + mixW;
-      distW /= sum;
-      centerWhitenessW /= sum;
-      whiteDiffW /= sum;
-      perpCW /= sum;
-      mixW /= sum;
-      if (thresholdq < 0) this.thresholdq = 1.0/scale;
-      threshold = (int)(thresholdq * scale);
-    }
-    
-    public void systemPrint() {
-    System.out.println(
-        "base: CW: " + centerWhitenessW 
-         + " d: " + distW 
-         + " pC: " + perpCW 
-         + " wD: " + whiteDiffW 
-         + " thr: " + threshold 
-         + " mix: " + mixW 
-      );    
-    }
+
   }
+
+  public CCOGParams(int windowSizeI, int scaleI, int thresholdI, double distWI, double centerWhitenessWI, double whiteDiffWI, double perpCWI, double mixWI) {
+    this.windowSize = windowSizeI;
+    this.scale = scaleI;
+    this.threshold = thresholdI;
+    this.distW = distWI;
+    this.centerWhitenessW = centerWhitenessWI;
+    this.whiteDiffW = whiteDiffWI;
+    this.perpCW = perpCWI;
+    this.mixW = mixWI;
+    this.thresholdq = (double) this.threshold / (double) this.scale;
+    normalizeWeights();
+  }
+
+  public double getRegularization() {
+    return (distW - 0.2) * (distW - 0.2)
+            + (whiteDiffW - 0.2) * (whiteDiffW - 0.2)
+            + (centerWhitenessW - 0.2) * (centerWhitenessW - 0.2)
+            + (perpCW - 0.2) * (perpCW - 0.2)
+            + (mixW - 0.2) * (mixW - 0.2);
+
+
+  }
+
+  public void normalizeWeights() {
+    if (distW < 0) {
+      distW = 0.001;
+    }
+    if (perpCW < 0) {
+      perpCW = 0.001;
+    }
+    if (centerWhitenessW < 0) {
+      centerWhitenessW = 0.001;
+    }
+    if (whiteDiffW < 0) {
+      whiteDiffW = 0.001;
+    }
+    if (mixW < 0) {
+      mixW = 0.001;
+    }
+    double sum = distW + centerWhitenessW + whiteDiffW + perpCW + mixW;
+    distW /= sum;
+    centerWhitenessW /= sum;
+    whiteDiffW /= sum;
+    perpCW /= sum;
+    mixW /= sum;
+    if (thresholdq < 0) {
+      this.thresholdq = 1.0 / scale;
+    }
+    threshold = (int) (thresholdq * scale);
+  }
+
+  public void systemPrint() {
+    System.out.println(
+            "base: CW: " + centerWhitenessW
+            + " d: " + distW
+            + " pC: " + perpCW
+            + " wD: " + whiteDiffW
+            + " thr: " + threshold
+            + " mix: " + mixW);
+  }
+}

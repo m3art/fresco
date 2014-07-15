@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import workers.registration.CCOGLearning;
 
 /**
  * All user actions are resolved here
@@ -141,7 +142,9 @@ public class CUserActionListener implements ActionListener, ItemListener {
 					break;
         case runMultipleIntPoints:
           try {
-            manager.runMultipleIntPoints();
+            CCOGLearning l = new CCOGLearning(manager.imagePanel);
+            l.runCrossVal();
+            //manager.runMultipleIntPoints();
           }
           catch(Exception ex) {
             return;
@@ -166,7 +169,8 @@ public class CUserActionListener implements ActionListener, ItemListener {
         case harris:
         case COG:
         case ransac:
-        case MSERCorrelator:
+        //case MSERCorrelator:
+        case pointPairSelector:
           manager.runImageWorker(id, null);
 					break;
 			}

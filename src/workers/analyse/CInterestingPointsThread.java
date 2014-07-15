@@ -6,6 +6,8 @@
  */
 package workers.analyse;
 
+import java.awt.image.BufferedImage;
+import workers.registration.CImageScore;
 import workers.registration.CInterestingPoints;
 
 /**
@@ -14,25 +16,21 @@ import workers.registration.CInterestingPoints;
  */
 public class CInterestingPointsThread extends Thread{
   public CInterestingPoints intPoints;
+  public CImageScore scorer;
   public double result;
   
   
-  public CInterestingPointsThread(CInterestingPoints input) {
+  public CInterestingPointsThread(CInterestingPoints input, BufferedImage reference) {
     intPoints = input;
-    result = 0.0;
+    this.scorer = new CImageScore(input, reference);
   
   }
   
   @Override
   public void run() {
-    result = intPoints.publicRun();
-  
-  
-  }
+    result = scorer.getScore();
     
   
-  
-  
-  
+  }
   
 }

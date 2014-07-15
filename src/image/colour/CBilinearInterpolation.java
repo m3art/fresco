@@ -6,6 +6,7 @@ package image.colour;
 
 import java.awt.geom.Point2D;
 import java.awt.image.Raster;
+import utils.CIdxMapper;
 
 /**
  * @author gimli
@@ -13,60 +14,80 @@ import java.awt.image.Raster;
  */
 public class CBilinearInterpolation {
 
-	/**
-	 * Interpolation of pixel intensity (gray scale)
-	 * @param position double coordinates. Interpolation is taken from nearest
-	 * four points with integer coordinates
-	 * @param leftTop gray intensity in nearest left top pixel
-	 * @param rightTop dtto
-	 * @param leftBottom dtto
-	 * @param rightBottom dtto
-	 * @return interpolated value of gray intensity at @param position
-	 */
-	public static double getValue(Point2D.Double position, double leftTop, double rightTop, double leftBottom, double rightBottom) {
+  /**
+   * Interpolation of pixel intensity (gray scale)
+   *
+   * @param position double coordinates. Interpolation is taken from nearest
+   * four points with integer coordinates
+   * @param leftTop gray intensity in nearest left top pixel
+   * @param rightTop dtto
+   * @param leftBottom dtto
+   * @param rightBottom dtto
+   * @return interpolated value of gray intensity at
+   * @param position
+   */
+  public static double getValue(Point2D.Double position, double leftTop, double rightTop, double leftBottom, double rightBottom) {
+    double alpha = 1 - position.x + (int) position.x,
+            beta = 1 - position.y + (int) position.y;
 
-		double alpha = 1 - position.x + (int) position.x,
-				beta = 1 - position.y + (int) position.y;
+    return beta * (alpha * leftTop + (1 - alpha) * rightTop)
+            + (1 - beta) * (alpha * leftBottom + (1 - alpha) * rightBottom);
+  }
 
-		return beta * (alpha * leftTop + (1 - alpha) * rightTop)
-				+ (1 - beta) * (alpha * leftBottom + (1 - alpha) * rightBottom);
-	}
+  public static double[] getValue(Point2D.Double position, Raster image) {
+    double rgba[] = new double[image.getNumBands()];
 
-	public static double[] getValue(Point2D.Double position, Raster image) {
-		double rgba[] = new double[image.getNumBands()];
+    if (position.x == (int) position.x && position.y == (int) position.y) {
+      return image.getPixel((int) position.x, (int) position.y, rgba);
+    }
 
-		if (position.x == (int)position.x && position.y == (int)position.y) {
-			return image.getPixel((int)position.x, (int)position.y, rgba);
-		}
-
-		for (int i = 0; i < image.getNumBands(); i++) {
-			rgba[i] = getValue(position, image.getSampleDouble((int) position.x, (int) position.y, i),
-					image.getSampleDouble((int) position.x + 1, (int) position.y, i),
-					image.getSampleDouble((int) position.x, (int) position.y + 1, i),
-					image.getSampleDouble((int) position.x + 1, (int) position.y + 1, i));
-		}
+    for (int i = 0; i < image.getNumBands(); i++) {
+      rgba[i] = getValue(position, image.getSampleDouble((int) position.x, (int) position.y, i),
+              image.getSampleDouble((int) position.x + 1, (int) position.y, i),
+              image.getSampleDouble((int) position.x, (int) position.y + 1, i),
+              image.getSampleDouble((int) position.x + 1, (int) position.y + 1, i));
+    }
 
 
-		return rgba;
-	}
-  
+    return rgba;
+  }
+
   public static double getValue(Point2D.Double position, double[][] image) {
     Point2D.Double topLeft = new Point2D.Double(Math.floor(position.x), Math.floor(position.y));
-    return getValue(position, 
-            image[(int)topLeft.y][(int)topLeft.x], 
-            image[(int)topLeft.y][(int)topLeft.x+1], 
-            image[(int)topLeft.y+1][(int)topLeft.x], 
-            image[(int)topLeft.y+1][(int)topLeft.x+1]);
- 	}
-  
-  public static double getValue(Point2D.Double position, int[] image, int w, int h) {
-    Point2D.Double topLeft = new Point2D.Double(Math.floor(position.x), Math.floor(position.y));
-    return getValue(position, 
-            image[(int)topLeft.y*w+(int)topLeft.x], 
-            image[(int)topLeft.y*2+(int)topLeft.x+1], 
-            image[((int)topLeft.y+1)*w + (int)topLeft.x], 
-            image[((int)topLeft.y+1)*w+ (int)topLeft.x+1]);
- 	}
+    return getValue(position,
+            image[(int) topLeft.y][(int) topLeft.x],
+            image[(int) topLeft.y][(int) topLeft.x + 1],
+            image[(int) topLeft.y + 1][(int) topLeft.x],
+            image[(int) topLeft.y + 1][(int) topLeft.x + 1]);
+  }
 
-  
+  public static double getValue(Point2D.Double position, int[] image, int w, int h) {
+
+    Point2D.Double topLeftPt = new Point2D.Double(Math.floor(position.x), Math.floor(position.y));
+
+    double topRight = 0.0;
+    double bottomLeft = 0.0;
+    double bottomRight = 0.0;
+
+    double topLeft = image[(int) topLeftPt.y * w + (int) topLeftPt.x];
+
+    if (!(CIdxMapper.isBottomEdge(topLeftPt, w, h)) && !(CIdxMapper.isRightEdge(topLeftPt, w, h))) {
+      bottomRight = image[((int) topLeftPt.y + 1) * w + (int) topLeftPt.x + 1];
+      bottomLeft = image[((int) topLeftPt.y + 1) * w + (int) topLeftPt.x];
+      topRight = image[(int) topLeftPt.y * w + (int) topLeftPt.x + 1];
+
+    } else if (CIdxMapper.isBottomEdge(topLeftPt, w, h) && !(CIdxMapper.isRightEdge(topLeftPt, w, h))) {
+      topRight = image[(int) topLeftPt.y * w + (int) topLeftPt.x + 1];
+    } else if (!(CIdxMapper.isBottomEdge(topLeftPt, w, h)) && (CIdxMapper.isRightEdge(topLeftPt, w, h))) {
+      bottomLeft = image[((int) topLeftPt.y + 1) * w + (int) topLeftPt.x];
+    }
+    return getValue(position,
+            topLeft,
+            topRight,
+            bottomLeft,
+            bottomRight);
+
+
+
+  }
 }

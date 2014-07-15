@@ -6,40 +6,140 @@
  */
 package workers.analyse;
 
+import java.awt.geom.Point2D;
+import java.awt.geom.Point2D.Double;
 import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-
 /**
  *
  * @author Jakub
  */
 public class CCornerDetectorCOGTest {
-  
-  
-  
+
   public CCornerDetectorCOGTest() {
   }
 
-  
   @Test
   public void testGetCOG() {
-     int [] inputArray = {99, 115, 132, 107, 99, 103, 103, 111, 119, 107, 119, 99, 111, 111, 103, 115, 115, 107, 99, 115, 111, 111, 99, 115, 111, 103, 99, 107, 107, 107, 123, 107, 119, 99, 119, 111, 103, 107, 128, 111, 115, 103, 119, 111, 103, 115, 103, 107, 103, 115, 103, 119, 103, 115, 115, 111, 115, 107, 103, 107, 119, 111, 119, 107, 123, 115, 123, 119, 107, 115, 103, 119, 111, 115, 107, 115, 107, 107, 111, 103, 107, 107, 119, 111, 123, 107, 107, 111, 99, 111, 99, 123, 111, 107, 115, 115, 115, 107, 115, 107, 115, 103, 115, 99, 107, 111, 107, 107, 115, 119, 99, 103, 99, 115, 119, 107, 107, 107, 111, 115, 128};
-    CCornerDetectorCOG COG = new CCornerDetectorCOG(11);
+    int[] input = {
+      250, 250, 250, 0, 0,
+      250, 0, 250, 0, 0,
+      250, 250, 255, 0, 0,
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0
+    };
+      
+    CCornerDetectorCOG instance = new CCornerDetectorCOG(5);
+
+    double[] retVal = instance.getCOG(input);
+    instance.param.centerWhitenessW = 0.2;
+    instance.param.distW = 0.2;
+    instance.param.perpCW = 0.2;
+    instance.param.whiteDiffW = 0.2;
+    instance.param.mixW = 0.2;
+
+    assertEquals(0.71, retVal[0], 0.01);
     
-    double [] actRetVal = COG.getCOG(inputArray, false);
-    double [] expRetVal = {0.02123204161973389, 0.46484375, 0.022832728679430793, 0.5, 0.56640625};  
-    for (int i = 0; i < actRetVal.length; i++) {
-			assertEquals(actRetVal[i], expRetVal[i], 0.0000001);
-		}
   }
-          
-          
-          
-          
-  
+
+  @Test
+  public void testGetWeightedCOG() {
+    System.out.println("getWeightedCOG");
+    int[] input = {
+      250, 250, 250, 0, 0,
+      250, 0, 250, 0, 0,
+      250, 250, 250, 0, 0,
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0
+    };
+    CCornerDetectorCOG instance = new CCornerDetectorCOG(5);
+    Point2D.Double result = instance.getWeightedCOG(input);
+    assertEquals(-0.857, result.x, 0.001);
+    assertEquals(-0.857, result.y, 0.001);
+  }
+
+  @Test
+  public void testGetDist() {
+    System.out.println("getPerpCheck1");
+    int[] input = {
+      250, 250, 250, 0, 0,
+      250, 0, 250, 0, 0,
+      250, 250, 250, 0, 0,
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0
+    };
+
+    CCornerDetectorCOG instance = new CCornerDetectorCOG(5);
+    System.out.println("getDist");
+    Point2D.Double CenterOfGravity = instance.getWeightedCOG(input);
+    double result = instance.getDist(CenterOfGravity);
+    assertEquals(0.42, result, 0.01);
+    //fail("The test case is a prototype.");
+  }
+
+  @Test
+  public void testGetPerpCheck1() {
+    System.out.println("getPerpCheck1");
+    int[] input = {
+      250, 250, 250, 0, 0,
+      250, 0, 250, 0, 0,
+      250, 250, 250, 0, 0,
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0
+    };
+
+    CCornerDetectorCOG instance = new CCornerDetectorCOG(5);
+    Point2D.Double CenterOfGravity = instance.getWeightedCOG(input);
+    double dist = instance.getDist(CenterOfGravity);
+    double result = instance.getPerpCheck(CenterOfGravity, dist, input);
+    assertEquals(1.0, result, 0.1);
+    
+  }
+
+  @Test
+  public void testGetPerpCheck2() {
+    System.out.println("getPerpCheck2");
+    int[] input = {
+      250, 250, 250, 0, 255,
+      250, 0, 250, 255, 0,
+      250, 250, 250, 0, 0,
+      0, 255, 0, 0, 0,
+      255, 0, 0, 0, 0
+    };
+
+    CCornerDetectorCOG instance = new CCornerDetectorCOG(5);
+    Point2D.Double CenterOfGravity = instance.getWeightedCOG(input);
+    double dist = instance.getDist(CenterOfGravity);
+    double result = instance.getPerpCheck(CenterOfGravity, dist, input);
+
+    assertEquals(0.15, result, 0.1);
+   
+  }
+
+
+  @Test
+  public void testGetWhiteDifferential() {
+    System.out.println("getWhiteDifferential");
+    int[] input = {
+      250, 250, 250, 0, 0,
+      250, 0, 250, 0, 0,
+      250, 250, 255, 0, 0,
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0
+    };
+    
+    CCornerDetectorCOG instance = new CCornerDetectorCOG(5);
+    Point2D.Double CenterOfGravity = instance.getWeightedCOG(input);
+    double centerWhiteness = instance.getCenterWhiteness(input);
+    double result = instance.getWhiteDifferential(CenterOfGravity, centerWhiteness, input);
+    
+    assertEquals(0.86, result, 0.01);
+    
+  }
 }

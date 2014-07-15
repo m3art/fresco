@@ -25,6 +25,8 @@ public class CLocalMaximiser {
   
   
   public BufferedImage runMaxima(BufferedImage input) {
+    
+    
     Raster inputData = input.getData();
     int w = input.getWidth();
     int h = input.getHeight();
@@ -37,11 +39,8 @@ public class CLocalMaximiser {
     blackpx[0] = 0;
     blackpx[1] = 0;
     blackpx[2] = 0;
-    int [] whitepx = new int[3];
-    whitepx[0] = 255;
-    whitepx[1] = 255;
-    whitepx[2] = 255;
     
+    //init
     boolean[] isMax = new boolean[w*h];
     for (int i = 0; i < w; i++) {
       for (int j = 0; j < h; j++) {
@@ -50,6 +49,8 @@ public class CLocalMaximiser {
         isMax[j*w+i] = false;
       }
     }
+    
+    //test if max in region
     int locmaxdim = windowSize/2;
     for (int i = locmaxdim; i < w-locmaxdim; i++) {
       for (int j = locmaxdim; j < h-locmaxdim; j++) {
@@ -68,6 +69,7 @@ public class CLocalMaximiser {
       }
     }
     
+    //black out all non-maxima
     for (int x = 0; x < input.getWidth(); x++) {
       for (int y = 0; y < input.getHeight(); y++) {
         if (isMax[y*w+x]) {
@@ -81,6 +83,9 @@ public class CLocalMaximiser {
       }
     }
     
+    
+    //test if multiple equal maxima are adjacent
+    //only keep those to the bottom right (arbitrary, can keep any)
     for (int i = locmaxdim; i < w-locmaxdim; i++) {
       for (int j = locmaxdim; j < h-locmaxdim; j++) {
         centerpx = inputData.getPixel(i, j, centerpx);
@@ -96,6 +101,7 @@ public class CLocalMaximiser {
         }
       }
     }
+    //black out all but bottom right of contiguous maxima region
     for (int x = 0; x < input.getWidth(); x++) {
       for (int y = 0; y < input.getHeight(); y++) {
         if (isMax[y*w+x]) {

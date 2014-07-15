@@ -16,7 +16,20 @@ public class CCovarianceMetric  extends CAreaSimilarityMetric {
 	public CCovarianceMetric(BufferedImage inputA, BufferedImage inputB, double radius, Shape shape) {
 		super(inputA, inputB, radius, shape);
 	}
+public double getValue(int[] inputAValues, int[] inputBValues) {
+    double[] doubleInputAValues = new double[inputAValues.length];
+    double[] doubleInputBValues = new double[inputBValues.length];
 
+    for (int i = 0; i < inputAValues.length; i++) {
+        doubleInputAValues[i] = (double)inputAValues[i];
+      
+    }
+    for (int i = 0; i < inputBValues.length; i++) {
+       doubleInputBValues[i] = (double)inputBValues[i];
+      }
+    return getValue(doubleInputAValues, doubleInputBValues);
+
+  }
 
 	@Override
 	public double getValue(double[] a, double[] b) {

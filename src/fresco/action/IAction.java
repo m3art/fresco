@@ -51,6 +51,7 @@ public interface IAction {
     COG,
     ransac,
     MSERCorrelator,
+    pointPairSelector,
 		// correction
 		ahe,
 		colorShift,
