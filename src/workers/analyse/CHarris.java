@@ -10,6 +10,8 @@ package workers.analyse;
  *
  * @author Jakub
  */
+import fresco.swing.CWorkerDialogFactory;
+import info.clearthought.layout.TableLayout;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
@@ -17,6 +19,7 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.*;
 import workers.CImageWorker;
 import workers.analyse.paramObjects.CHarrisParams;
 
@@ -181,5 +184,26 @@ public class CHarris extends CAnalysisWorker {
     }
 
     return output;
+  }
+  
+  
+  private JTextField sensitivityInput = new JTextField();
+
+  @Override
+  public boolean confirmDialog() {
+    this.param.sensitivity = Double.parseDouble(sensitivityInput.getText());
+    return true;
+  }
+
+  @Override
+  public JDialog getParamSettingDialog() {
+    JPanel content = new JPanel();
+    TableLayout layout = new TableLayout(new double[]{200, 100}, new double[]{20});
+    content.setLayout(layout);
+
+    content.add(new JLabel("Set sensitivity parameter: "), "0,0");
+    content.add(sensitivityInput, "1,0");
+
+    return CWorkerDialogFactory.createOkCancelDialog(this, content);
   }
 }

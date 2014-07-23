@@ -6,7 +6,10 @@
  */
 package workers.registration;
 
+import fresco.swing.CWorkerDialogFactory;
+import info.clearthought.layout.TableLayout;
 import java.awt.image.BufferedImage;
+import javax.swing.*;
 import workers.CImageWorker;
 
 /**
@@ -40,7 +43,7 @@ public class CPointPairSelector extends CImageWorker<CPointPairs, Void> {
    * given a correlator(something that takes two images and returns points and
    * their correlations), selects the best correlated pairs using an eager
    * algorithm
-   
+   *
    */
   private CPointPairs getPairs(CDerotationCorrelator correlator, int pairCount) {
     CPointPairs pairs = new CPointPairs();
@@ -86,12 +89,33 @@ public class CPointPairSelector extends CImageWorker<CPointPairs, Void> {
 
   @Override
   protected CPointPairs doInBackground() {
-    return getPairs(correlator, requestedPairs);
+    CPointPairs pairs = getPairs(correlator, requestedPairs);
 
+    return pairs;
   }
 
   @Override
   public Type getType() {
     return Type.REGISTRATION;
+  }
+  
+  private JTextField reqPairsInput = new JTextField();
+
+  @Override
+  public boolean confirmDialog() {
+    this.requestedPairs = Integer.parseInt(reqPairsInput.getText());
+    return true;
+  }
+
+  @Override
+  public JDialog getParamSettingDialog() {
+    JPanel content = new JPanel();
+    TableLayout layout = new TableLayout(new double[]{200, 100}, new double[]{20});
+    content.setLayout(layout);
+
+    content.add(new JLabel("Set number of pairs: "), "0,0");
+    content.add(reqPairsInput, "1,0");
+
+    return CWorkerDialogFactory.createOkCancelDialog(this, content);
   }
 }

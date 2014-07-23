@@ -26,7 +26,15 @@ public class CHarrisParams extends CExtractorParams {
     this.windowSize = 11;
     this.sigma = 1.5;
     this.threshold = 0;
-    this.sensitivity = 0.0005;
+    this.sensitivity = 0.005;
+  }
+  
+  
+  public CHarrisParams(double sensitivityI) {
+    this.windowSize = 11;
+    this.sigma = 1.5;
+    this.threshold = 0;
+    this.sensitivity = sensitivityI;
   }
   
 }

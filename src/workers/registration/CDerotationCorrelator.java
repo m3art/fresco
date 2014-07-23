@@ -182,17 +182,10 @@ public class CDerotationCorrelator extends CImageWorker<double[][], Void> {
   public double[][] doInBackground() {
     //Initialize extractor
     CCOGParams pc = new CCOGParams(CCOGParams.values.learned);
-    //pc.centerWhitenessW = 0.13;
-    //pc.distW = 0.05;
-    //pc.perpCW = 0.4;
-    //pc.whiteDiffW = 0.2;
-    //pc.mixW = 0.21;
-    //pc.normalizeWeights();
-    //pc.windowSize = 23;
     CLoGParams pl = new CLoGParams();
     CInterestingPoints extractor;
-    CHarrisParams ph = new CHarrisParams();
-    extractor = new CInterestingPoints(inputA, CInterestingPoints.Cornerer.harris, CInterestingPoints.Edger.LOG, ph, pl, 0, 0);
+    CHarrisParams ph = new CHarrisParams(0.005);
+    extractor = new CInterestingPoints(inputA, CInterestingPoints.Cornerer.harris, CInterestingPoints.Edger.LOG, pc, pl, 0, 0);
 
     //get points from extractor
     logger.info("getting pts from A");

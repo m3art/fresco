@@ -106,9 +106,14 @@ public class CImageFile {
 
 			try {
 				String path = fc.getSelectedFile().getParent() + "/" + userString + "." + extension.toLowerCase();
-				JAI.create("filestore", image.getTransformedImage(CData.view), path, extension);
+				//JAI.create("filestore", image.getTransformedImage(CData.view), path, extension);
+         ImageIO.write(image.getTransformedImage(CData.view), "jpeg", new File(path));
 			} catch (IllegalArgumentException iae) {
 				logger.info("wrong name");
+				extension = fc.getFileFilter().getDescription();
+				//JAI.create("filestore", image.getImage(), path.toString()+"."+extension, extension);
+			} catch (IOException ioe) {
+				logger.info("IO exception during saving");
 				extension = fc.getFileFilter().getDescription();
 				//JAI.create("filestore", image.getImage(), path.toString()+"."+extension, extension);
 			}

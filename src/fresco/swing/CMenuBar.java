@@ -32,7 +32,7 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
   // edit menu items
   CMenuItem fixImage, fixSegments, rename, capture;
   // analysis items
-  CMenuItem diff, sobel, laplacian, wavelets, mutualInfo, pca, patternAnalysis, intPoints, harris, COG, pointPairSelector;
+  CMenuItem diff, sobel, laplacian, wavelets, mutualInfo, pca, patternAnalysis, intPoints, harris, COG, pointPairSelector, pointPairDisplay;
   // correction items
   CMenuItem ahe, colorShift;
   // transform items
@@ -230,6 +230,11 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
     pointPairSelector = new CMenuItem("Point pairs", RegID.pointPairSelector);
     pointPairSelector.addActionListener(CData.userActionListener);
     analysisMenu.add(pointPairSelector);
+    
+    pointPairDisplay = new CMenuItem("Display point pairs", RegID.pointPairDisplay);
+    pointPairDisplay.addActionListener(CData.userActionListener);
+    analysisMenu.add(pointPairDisplay);
+    
 
   }
 
@@ -318,6 +323,17 @@ public class CMenuBar extends JMenuBar implements IFrescoComponent {
     } else {
       perspectiveTrans.setEnabled(true);
     }
+/*
+    if (CData.showImage[0] != -1
+            && CData.showImage[2] != -1
+            && CData.pairs != null) {
+      pointPairDisplay.setEnabled(true);
+      System.out.println("enabled");
+    } else {
+      pointPairDisplay.setEnabled(false);
+      System.out.println("disabled");
+    }
+*/
   }
 
   private void createCorrectionMenu() {

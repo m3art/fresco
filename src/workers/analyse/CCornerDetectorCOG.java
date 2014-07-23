@@ -80,8 +80,9 @@ public class CCornerDetectorCOG extends CAnalysisWorker {
 
   /**
    * normalizes the input writable raster - linearly stretches it to fill full
-   * range writes the result to output 0-255 assumes one band image stored in
-   * the first band for lack of BufferedImage.TYPE_INT_GRAYSCALE
+   * range writes the result to output 0-255 
+   * assumes one band image stored in the first band for 
+   * lack of BufferedImage.TYPE_INT_GRAYSCALE
    *
    * Also takes care of thresholding the image (using param.threshold)
    */

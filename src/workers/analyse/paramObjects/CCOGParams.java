@@ -6,13 +6,15 @@
  */
 package workers.analyse.paramObjects;
 
+import workers.analyse.CLaplacian;
+
 /**
  *
  * @author Jakub
  */
 public class CCOGParams extends CExtractorParams {
-  //public int windowSize = 13;
 
+  private static final int WINDOW_SIZE_DEFAULT = 11;
   /**
    * max pixel value
    */
@@ -45,6 +47,7 @@ public class CCOGParams extends CExtractorParams {
    * weight of the mix of the above parameters
    */
   public double mixW;
+  public double windowSizeq;
 
   public enum values {
 
@@ -57,7 +60,7 @@ public class CCOGParams extends CExtractorParams {
    */
   public CCOGParams(values vals) {
     if (vals == values.def) {
-      this.windowSize = 13;
+      this.windowSizeq = 1.0;
       this.scale = 256;
       this.threshold = 30;
       this.distW = 0.2;
@@ -66,16 +69,19 @@ public class CCOGParams extends CExtractorParams {
       this.perpCW = 0.2;
       this.mixW = 0.2;
       this.thresholdq = (double) this.threshold / (double) this.scale;
+      getWindowSizeFromQ();
     } else if (vals == values.learned) {
-      this.windowSize = 13;
+      this.windowSizeq = 1.0;
       this.scale = 256;
-      this.threshold = 30;
-      this.distW = 0.05;
-      this.centerWhitenessW = 0.13;
-      this.whiteDiffW = 0.2;
-      this.perpCW = 0.4;
-      this.mixW = 0.21;
+      this.threshold = 34;
+      this.distW = 0.077;
+      this.centerWhitenessW = 0.111;
+      this.whiteDiffW = 0.183;
+      this.perpCW = 0.322;
+      this.mixW = 0.305;
+      this.normalizeWeights();
       this.thresholdq = (double) this.threshold / (double) this.scale;
+      getWindowSizeFromQ();
 
 
     }
@@ -93,6 +99,10 @@ public class CCOGParams extends CExtractorParams {
     this.mixW = mixWI;
     this.thresholdq = (double) this.threshold / (double) this.scale;
     normalizeWeights();
+  }
+
+  private static int getWindowSizeDefault() {
+    return WINDOW_SIZE_DEFAULT;
   }
 
   public double getRegularization() {
@@ -131,6 +141,10 @@ public class CCOGParams extends CExtractorParams {
       this.thresholdq = 1.0 / scale;
     }
     threshold = (int) (thresholdq * scale);
+  }
+
+  public void getWindowSizeFromQ() {
+    windowSize = (int) (windowSizeq * CCOGParams.getWindowSizeDefault());
   }
 
   public void systemPrint() {

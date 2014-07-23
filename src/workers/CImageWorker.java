@@ -100,6 +100,8 @@ public abstract class CImageWorker<T, V> extends SwingWorker<T, V> implements II
         //return new CMSERCorrelator(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage());
       case pointPairSelector:
         return new CPointPairSelector(CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage(), 30);
+      case pointPairDisplay:
+        return new CPointPairMatchDisplay(CData.pairs, CData.getImage(CData.showImage[0]).getImage(), CData.getImage(CData.showImage[2]).getImage());
       default:
 
         return null;

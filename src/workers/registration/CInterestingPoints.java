@@ -4,8 +4,10 @@
  */
 package workers.registration;
 
+import fresco.swing.CWorkerDialogFactory;
 import image.converters.CNormalization;
 import image.converters.Crgb2grey;
+import info.clearthought.layout.TableLayout;
 import workers.analyse.CCannyEdgeDetector;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
@@ -15,10 +17,12 @@ import java.util.logging.Logger;
 import workers.CImageWorker;
 import workers.analyse.CCornerDetectorCOG;
 import java.awt.geom.Point2D;
+import javax.swing.*;
 import utils.metrics.*;
 import workers.analyse.*;
 
 import workers.analyse.paramObjects.CCOGParams;
+import workers.analyse.paramObjects.CCOGParams.values;
 import workers.analyse.paramObjects.CEdgerParams;
 import workers.analyse.paramObjects.CExtractorParams;
 import workers.analyse.paramObjects.CHarrisParams;
@@ -52,7 +56,6 @@ public class CInterestingPoints extends CAnalysisWorker {
   private static final Logger logger = Logger.getLogger(CImageWorker.class.getName());
   public static int topPts = 600; //TODO parametrize
   public BufferedImage input, output;
-  
   /**
    * Class used to find corners
    */
@@ -93,7 +96,8 @@ public class CInterestingPoints extends CAnalysisWorker {
    * of cells horizontally number of cells vertically is calculated to have a
    * similar ratio to overall dimensions
    */
-  private int CELLS_ACROSS = 8;
+  private int GRID_CELL_WIDTH = 100;
+  private int GRID_CELL_HEIGHT = 100;
 
   @Override
   public Type getType() {
@@ -375,13 +379,7 @@ public class CInterestingPoints extends CAnalysisWorker {
    * runs the cornering algorithm chooses points according to "cornerity"
    */
   public CPointsAndQualities getPoints(BufferedImage input) {
-    CPointsAndQualities retPts = new CPointsAndQualities();
-    //calculate number of cells in vertical direction
-    //cells will be approximately square
-    int cellsDown = (int) (((double) CELLS_ACROSS / input.getWidth()) * input.getHeight());
-    retPts = selectPts(getResult(input).getRaster(), topPts, CELLS_ACROSS, cellsDown);
-    return retPts;
-
+    return selectPts(getResult(input).getRaster(), topPts, input.getWidth() / GRID_CELL_WIDTH, input.getHeight() / GRID_CELL_HEIGHT);
   }
 
   /**
@@ -395,7 +393,8 @@ public class CInterestingPoints extends CAnalysisWorker {
     BufferedImage ret = new BufferedImage(edgedGreyscale.getWidth(), edgedGreyscale.getHeight(), BufferedImage.TYPE_INT_RGB);
     if (this.cornerer == Cornerer.harris) {
       CHarrisParams p = (CHarrisParams) paramC;
-      CHarris harris = new CHarris(edgedGreyscale, p);
+      //CHarris harris = new CHarris(edgedGreyscale, p);
+      CHarris harris = new CHarris(input, p);
       try {
         logger.info("cornerer is harris");
         output = harris.runHarris();
@@ -531,5 +530,72 @@ public class CInterestingPoints extends CAnalysisWorker {
 
   public Double publicRun(BufferedImage taggedImage) {
     return getScore(taggedImage);
+  }
+  private JComboBox cornererInput = new JComboBox();
+  private JComboBox edgerInput = new JComboBox();
+  private JComboBox cogParamsInput = new JComboBox();
+    private JTextField sensitivityInput = new JTextField();
+
+
+  @Override
+  public boolean confirmDialog() {
+    String cornererString = (String) cornererInput.getSelectedItem();
+    if (cornererString == "Harris") {
+      this.cornerer = Cornerer.harris;
+      this.paramC = new CHarrisParams(Double.parseDouble(sensitivityInput.getText()));
+    }
+    if (cornererString == "COG") {
+      this.cornerer = Cornerer.COG;
+      String cogParamsString = (String) cogParamsInput.getSelectedItem();
+      if (cogParamsString == "Learned") {
+        this.paramC = new CCOGParams(values.learned);
+      }
+      if (cogParamsString == "Default") {
+        this.paramC = new CCOGParams(values.def);
+      }
+    }
+
+    String edgerString = (String) edgerInput.getSelectedItem();
+    if (edgerString == "Laplacian of Gaussian") {
+      this.edger = Edger.LOG;
+    }
+    if (edgerString == "Sobel") {
+      this.edger = Edger.sobel;
+    }
+
+    return true;
+  }
+
+  @Override
+  public JDialog getParamSettingDialog() {
+    JPanel content = new JPanel();
+
+
+    cornererInput.addItem((String) "COG");
+    cornererInput.addItem((String) "Harris");
+
+    edgerInput.addItem((String) "Laplacian of Gaussian");
+    edgerInput.addItem((String) "Sobel");
+
+    cogParamsInput.addItem((String) "Learned");
+    cogParamsInput.addItem((String) "Default");
+
+    TableLayout layout = new TableLayout(new double[]{200, 100}, new double[]{20, 20, 20, 20});
+    content.setLayout(layout);
+
+    content.add(new JLabel("Set cornerer: "), "0,0");
+    content.add(cornererInput, "1,0");
+
+    content.add(new JLabel("Set edger: "), "0,1");
+    content.add(edgerInput, "1,1");
+
+    content.add(new JLabel("Parameters for COG cornerer: "), "0,2");
+    content.add(cogParamsInput, "1,2");
+
+        content.add(new JLabel("Set sensitivity parameter for Harris: "), "0,3");
+    content.add(sensitivityInput, "1,3");
+
+
+    return CWorkerDialogFactory.createOkCancelDialog(this, content);
   }
 }

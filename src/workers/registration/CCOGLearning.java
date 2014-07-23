@@ -17,6 +17,7 @@ import workers.CImageWorker;
 import workers.analyse.CBestWindowSize;
 import workers.analyse.CInterestingPointsThread;
 import workers.analyse.paramObjects.CCOGParams;
+import workers.analyse.paramObjects.CHarrisParams;
 import workers.analyse.paramObjects.CLoGParams;
 
 /**
@@ -137,16 +138,13 @@ public class CCOGLearning {
   }
 
   public void initConstants() {
-
-
-
     learnRate = 2.0;
     learnRateLOGSigma = 10 * learnRate;
     learnRateLOGSize = 10 * learnRate;
     maxIters = 120;
     derStep = 1.1;
     setSize = CData.imagesSize() / 2;
-    paramCount = 8;
+    paramCount = 9;
     windowSizes = new int[setSize];
     lambda = 0.01;
     convergenceConstant = 0.0003;
@@ -185,7 +183,8 @@ public class CCOGLearning {
       imagePanel[2].setSizeByImage();
       imageA = CData.getImage(CData.showImage[0]).getImage();
       imageAGreyscale = (new Crgb2grey()).convert(imageA);
-      windowSizes[i / 2] = CBestWindowSize.getBestWindowSize(imageAGreyscale.getData(), 10000, 3, 25);
+      //windowSizes[i / 2] = CBestWindowSize.getBestWindowSize(imageAGreyscale.getData(), 10000, 3, 25);
+      windowSizes[i / 2] = 11;
       logger.info("windowsize: " + windowSizes[i / 2]);
     }
     imageA = null;
@@ -210,9 +209,11 @@ public class CCOGLearning {
     pc[5].normalizeWeights();
     pc[6].mixW *= derStep;
     pc[6].normalizeWeights();
-    pe[7].gaussSigma *= derStep;
-    pe[8].gaussSizeQ *= derStep;
-    pe[8].calculateSizeFromQ();
+    pc[7].windowSizeq *= derStep;
+    pc[7].normalizeWeights();
+    pe[8].gaussSigma *= derStep;
+    pe[9].gaussSizeQ *= derStep;
+    pe[9].calculateSizeFromQ();
   }
 
   /**
@@ -239,9 +240,11 @@ public class CCOGLearning {
     pc[0].whiteDiffW = pc[0].whiteDiffW + growth[3] * learnRate;
     pc[0].thresholdq = pc[0].thresholdq + growth[4] * learnRate;
     pc[0].mixW = pc[0].mixW + growth[5] * learnRate;
+    pc[0].windowSizeq = pc[0].windowSizeq + growth[6] * learnRate;
+    pc[0].getWindowSizeFromQ();
     pc[0].normalizeWeights();
-    pe[0].gaussSigma = pe[0].gaussSigma + growth[6] * learnRateLOGSigma;
-    pe[0].gaussSizeQ = pe[0].gaussSizeQ + growth[7] * learnRateLOGSize;
+    pe[0].gaussSigma = pe[0].gaussSigma + growth[7] * learnRateLOGSigma;
+    pe[0].gaussSizeQ = pe[0].gaussSizeQ + growth[8] * learnRateLOGSize;
     pe[0].calculateSizeFromQ();
     for (int j = 1; j < paramCount + 1; j++) {
       pc[j].centerWhitenessW = pc[0].centerWhitenessW;
@@ -250,6 +253,8 @@ public class CCOGLearning {
       pc[j].whiteDiffW = pc[0].whiteDiffW;
       pc[j].thresholdq = pc[0].thresholdq;
       pc[j].mixW = pc[0].mixW;
+      pc[j].windowSizeq = pc[0].windowSizeq;
+      pc[j].getWindowSizeFromQ();
       pc[j].normalizeWeights();
       pe[j].gaussSigma = pe[0].gaussSigma;
       pe[j].gaussSizeQ = pe[0].gaussSizeQ;
@@ -364,6 +369,7 @@ public class CCOGLearning {
             + " wD: " + pc[0].whiteDiffW
             + " thr: " + pc[0].threshold
             + " mix: " + pc[0].mixW
+            + " win: " + pc[0].windowSize
             + " gSg: " + pe[0].gaussSigma
             + " gSe: " + pe[0].gaussSize);
     System.out.println("COG base score: " + scoreField[0]);
@@ -447,12 +453,20 @@ public class CCOGLearning {
       CInterestingPointsThread validThread = new CInterestingPointsThread(validWorker, CData.getImage(CData.showImage[2]).getImage());
       validThread.start();
       validThread.join();
+      
       //run CInterestingPoints on heldout with random cornerer to get baseline
       CInterestingPoints randWorker = new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CInterestingPoints.Cornerer.random, CInterestingPoints.Edger.sobel, pc[0], pe[0], -2, 2 * heldout);
       CInterestingPointsThread randThread = new CInterestingPointsThread(randWorker, CData.getImage(CData.showImage[2]).getImage());
       randThread.start();
       randThread.join();
       System.out.println("Random score for heldout " + heldout + ": " + randThread.result);
+      
+      //run CInterestingPoints on heldout with harris cornerer to get baseline
+      CInterestingPoints harrisWorker = new CInterestingPoints(CData.getImage(CData.showImage[0]).getImage(), CInterestingPoints.Cornerer.harris, CInterestingPoints.Edger.sobel, new CHarrisParams(), pe[0], -2, 2 * heldout);
+      CInterestingPointsThread harrisThread = new CInterestingPointsThread(harrisWorker, CData.getImage(CData.showImage[2]).getImage());
+      harrisThread.start();
+      harrisThread.join();
+      System.out.println("Harris score for heldout " + heldout + ": " + harrisThread.result);
 
       scores[heldout] = validThread.result;
       //store learned params

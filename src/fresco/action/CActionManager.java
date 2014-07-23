@@ -53,7 +53,7 @@ public class CActionManager {
   private CContentPane content;
   private CPreviewBar previewBar;
   private static final Logger logger = Logger.getLogger(CActionManager.class.getName());
-  private MIPUtils m;
+  //private MIPUtils m;
 
   /**
    * Constructor have to handle a lot of gui panels
@@ -69,7 +69,7 @@ public class CActionManager {
     this.previewBar = previewBar;
     this.progressBar = progressBar;
     this.content = content;
-    this.m = new MIPUtils();
+    //this.m = new MIPUtils();
   }
 
   /**
@@ -293,9 +293,14 @@ public class CActionManager {
           break;
         case REGISTRATION:
           if (imageWorker instanceof CPointPairSelector) {
-            CPointPairs pairs = (CPointPairs) imageWorker.get();
+            CPointPairSelector worker = (CPointPairSelector) imageWorker;
+            //CData.output = new CImageContainer((BufferedImage) worker.pairedOutput, false);
+            CPointPairs pairs = (CPointPairs) worker.get();
+            CData.pairs = pairs;
+            System.out.println(pairs.toString());
             CData.getImage(CData.showImage[0]).setMarks(pairs.getOrigins());
             CData.getImage(CData.showImage[2]).setMarks(pairs.getProjected());
+            
             return;
           }
           CData.output = new CImageContainer((BufferedImage) imageWorker.get(), true);
@@ -366,7 +371,7 @@ public class CActionManager {
     content.setStructure(regID);
     refreshGUI();
   }
-
+/*
   private class MIPUtils {
 
     double learnrate = 2.0;
@@ -688,5 +693,5 @@ public class CActionManager {
     }
     System.out.println("overall score: " + overallScore / (double) setSize);
 
-  }
+  }*/
 }
