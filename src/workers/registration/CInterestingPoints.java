@@ -389,7 +389,7 @@ public class CInterestingPoints extends CAnalysisWorker {
   public BufferedImage getResult(BufferedImage input) {
     BufferedImage edgedGreyscale = getEdgedGreyscale(input);
     output = new BufferedImage(edgedGreyscale.getWidth(), edgedGreyscale.getHeight(), BufferedImage.TYPE_INT_RGB);
-
+   
     BufferedImage ret = new BufferedImage(edgedGreyscale.getWidth(), edgedGreyscale.getHeight(), BufferedImage.TYPE_INT_RGB);
     if (this.cornerer == Cornerer.harris) {
       CHarrisParams p = (CHarrisParams) paramC;
@@ -534,8 +534,7 @@ public class CInterestingPoints extends CAnalysisWorker {
   private JComboBox cornererInput = new JComboBox();
   private JComboBox edgerInput = new JComboBox();
   private JComboBox cogParamsInput = new JComboBox();
-    private JTextField sensitivityInput = new JTextField();
-
+  private JTextField sensitivityInput = new JTextField();
 
   @Override
   public boolean confirmDialog() {
@@ -592,7 +591,7 @@ public class CInterestingPoints extends CAnalysisWorker {
     content.add(new JLabel("Parameters for COG cornerer: "), "0,2");
     content.add(cogParamsInput, "1,2");
 
-        content.add(new JLabel("Set sensitivity parameter for Harris: "), "0,3");
+    content.add(new JLabel("Set sensitivity parameter for Harris: "), "0,3");
     content.add(sensitivityInput, "1,3");
 
 

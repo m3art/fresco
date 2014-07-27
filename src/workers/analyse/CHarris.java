@@ -91,6 +91,7 @@ public class CHarris extends CAnalysisWorker {
     int[] pixel = new int[3];
     double[] orig = new double[w * h];
 
+    
     double[] xDer = new double[w * h];
     double[] yDer = new double[w * h];
     double[] A = new double[w * h];

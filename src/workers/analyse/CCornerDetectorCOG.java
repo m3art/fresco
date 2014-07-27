@@ -80,11 +80,12 @@ public class CCornerDetectorCOG extends CAnalysisWorker {
 
   /**
    * normalizes the input writable raster - linearly stretches it to fill full
-   * range writes the result to output 0-255 
-   * assumes one band image stored in the first band for 
-   * lack of BufferedImage.TYPE_INT_GRAYSCALE
+   * range writes the result to output 0-255 assumes one band image stored in
+   * the first band for lack of BufferedImage.TYPE_INT_GRAYSCALE
    *
    * Also takes care of thresholding the image (using param.threshold)
+   *
+   * @author Jakub
    */
   protected WritableRaster linearNormalize(WritableRaster input) {
     double maxIntensity = 0;
@@ -199,6 +200,7 @@ public class CCornerDetectorCOG extends CAnalysisWorker {
 
   /**
    * calculates the distance of center of gravity from center of image region
+   * normalized between 0 and 1
    */
   protected double getDist(Point2D.Double CenterOfGravity) {
     double dist = Math.sqrt(CenterOfGravity.x * CenterOfGravity.x + CenterOfGravity.y * CenterOfGravity.y) / Math.sqrt(2 * (int) (param.windowSize / 2) * (int) (param.windowSize / 2));
@@ -209,13 +211,20 @@ public class CCornerDetectorCOG extends CAnalysisWorker {
    * calculates the perpendicularity check that is, are pixels on the line
    * perpendicular to the center of gravity - center of region not edges?
    */
-  protected double getPerpCheck(Point2D.Double CenterOfGravity, double dist, int[] input) {
-    Point2D.Double CenterOfGravityCheck = CenterOfGravity;
+  protected double getPerpCheck(Point2D.Double CenterOfGravity, int[] input) {
+    Point2D.Double CenterOfGravityCheck = (Point2D.Double) CenterOfGravity.clone();
+
+    //actual distance between center of gravity and center of image patch
+    double euclidDist = Math.sqrt(CenterOfGravity.x * CenterOfGravity.x + CenterOfGravity.y * CenterOfGravity.y);
+  //System.out.println("cog: " + CenterOfGravity.x + "," + CenterOfGravity.y);
+    
 
     double perpendicularCheck = 0;
-    if (dist > 0) {
+    double radius = (param.windowSize / 2)-1;
+    double ratio = radius / euclidDist;
+    if (euclidDist > 0) {
       //crawl just over the edge by adding the COG vector
-      while ((Math.abs(CenterOfGravityCheck.x) < (int) (param.windowSize / 2) - 1) && (Math.abs(CenterOfGravityCheck.y) < (int) (param.windowSize / 2) - 1)) {
+      /*while ((Math.abs(CenterOfGravityCheck.x) < (int) (param.windowSize / 2) - 1) && (Math.abs(CenterOfGravityCheck.y) < (int) (param.windowSize / 2) - 1)) {
         CenterOfGravityCheck.y += CenterOfGravity.y;
         CenterOfGravityCheck.x += CenterOfGravity.x;
 
@@ -224,14 +233,24 @@ public class CCornerDetectorCOG extends CAnalysisWorker {
       while ((Math.abs(CenterOfGravityCheck.x) > (int) (param.windowSize / 2)) || (Math.abs(CenterOfGravityCheck.y) > (int) (param.windowSize / 2))) {
         CenterOfGravityCheck.y -= CenterOfGravity.y;
         CenterOfGravityCheck.x -= CenterOfGravity.x;
-      }
+      }*/
+      CenterOfGravityCheck.x = ratio * CenterOfGravity.x;
+      CenterOfGravityCheck.y = ratio * CenterOfGravity.y;
+
+      //System.out.println("cgc: " + CenterOfGravityCheck.x + "," + CenterOfGravityCheck.y);
+
       //first perpendicular edge
-      Point2D.Double checkPointA = new Point2D.Double(CenterOfGravityCheck.x * (-1.0) + (int) (param.windowSize / 2), CenterOfGravityCheck.y + (int) (param.windowSize / 2));
+      Point2D.Double checkPointA = new Point2D.Double(CenterOfGravityCheck.y * (-1.0) + (int) (param.windowSize / 2), CenterOfGravityCheck.x + (int) (param.windowSize / 2));
       double valA = CBilinearInterpolation.getValue(checkPointA, input, param.windowSize, param.windowSize) / param.scale;
+      //System.out.println("cpa: " + checkPointA.x + "," + checkPointA.y);
+
 
       //second perpendicular edge
-      Point2D.Double checkPointB = new Point2D.Double(CenterOfGravityCheck.x + (int) (param.windowSize / 2), (CenterOfGravityCheck.y * -1.0) + (int) (param.windowSize / 2));
+      Point2D.Double checkPointB = new Point2D.Double(CenterOfGravityCheck.y + (int) (param.windowSize / 2), (CenterOfGravityCheck.x * -1.0) + (int) (param.windowSize / 2));
+      
       double valB = CBilinearInterpolation.getValue(checkPointB, input, param.windowSize, param.windowSize) / param.scale;
+      //System.out.println("cpb: " + checkPointB.x + "," + checkPointB.y);
+      //System.out.println("vals: " + valA + "," + valB);
       perpendicularCheck = 1 - ((valA + valB) / 2);
     }
     return perpendicularCheck;
@@ -247,7 +266,8 @@ public class CCornerDetectorCOG extends CAnalysisWorker {
 
   /**
    * returns the difference between the intensity of the COG and the center
-   * pixel value between 0 and 1 => values 0 - 0.5 imply
+   * pixel value between 0 and 1
+   *
    */
   protected double getWhiteDifferential(Point2D.Double centerOfGravity, double centerWhiteness, int[] input) {
     Point2D.Double COGIndex = new Point2D.Double(centerOfGravity.x + (int) (param.windowSize / 2), centerOfGravity.y + (int) (param.windowSize / 2));
@@ -279,14 +299,11 @@ public class CCornerDetectorCOG extends CAnalysisWorker {
 
 
     Point2D.Double CenterOfGravity = getWeightedCOG(input);
-
     double dist = getDist(CenterOfGravity);
-
-    double perpCheck = getPerpCheck(CenterOfGravity, dist, input);
-
+    double perpCheck = getPerpCheck(CenterOfGravity, input);
     double centerWhiteness = getCenterWhiteness(input);
-
     double whiteDifferential = getWhiteDifferential(CenterOfGravity, centerWhiteness, input);
+
 
     double[] ret = new double[6];
     ret[0] = (dist * param.distW + perpCheck * param.perpCW + centerWhiteness * param.centerWhitenessW + whiteDifferential * param.whiteDiffW + (dist * centerWhiteness) * param.mixW);

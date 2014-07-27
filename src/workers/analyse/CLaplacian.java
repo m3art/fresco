@@ -28,8 +28,8 @@ import workers.CImageWorker;
 public class CLaplacian extends CAnalysisWorker {
         private static final Logger logger = Logger.getLogger(CImageWorker.class.getName());
 	private final static int FILTER_SIZE_DEFAULT = 5;
-        private final static int GAUSS_SIZE_DEFAULT = 13;
-        private final static double GAUSS_SIGMA_DEFAULT = 1;
+        private final static int GAUSS_SIZE_DEFAULT = 15;
+        private final static double GAUSS_SIGMA_DEFAULT = 1.18;
         
 	/** size of input image */
 	//private final Dimension size;

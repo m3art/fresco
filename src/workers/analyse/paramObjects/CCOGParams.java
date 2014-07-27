@@ -74,11 +74,11 @@ public class CCOGParams extends CExtractorParams {
       this.windowSizeq = 1.0;
       this.scale = 256;
       this.threshold = 34;
-      this.distW = 0.077;
-      this.centerWhitenessW = 0.111;
-      this.whiteDiffW = 0.183;
-      this.perpCW = 0.322;
-      this.mixW = 0.305;
+      this.distW = 0.06;
+      this.centerWhitenessW = 0.12;
+      this.whiteDiffW = 0.26;
+      this.perpCW = 0.29;
+      this.mixW = 0.27;
       this.normalizeWeights();
       this.thresholdq = (double) this.threshold / (double) this.scale;
       getWindowSizeFromQ();
