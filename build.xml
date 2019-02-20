@@ -101,8 +101,6 @@ PROPERTIES NAMING CONVENTIONS:
 			<fileset refid="fresco.classes" />
 			<fileset refid="fresco.resources" />
 		</zip>
-		<signjar jar="${dist.dir}/${fresco.filename}" alias="frescosign2012" keypass="frescoSignum"
-			keystore="frescoKeystore" storepass="frescoSignum" />
 	</target>
 
 	<target name="fresco-rebuild" depends="clean, fresco-jar"/>
